@@ -13,6 +13,8 @@
 #include <iostream>
 #include <boost/asio.hpp>
 
+#include <synapse_protobuf/twist.pb.h>
+
 using boost::asio::ip::tcp;
 
 enum { max_length = 1024 };
