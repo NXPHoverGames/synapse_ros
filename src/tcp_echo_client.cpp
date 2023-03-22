@@ -11,46 +11,66 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <fstream>
+#include <string>
 #include <boost/asio.hpp>
 
 #include <synapse_protobuf/twist.pb.h>
 
-using boost::asio::ip::tcp;
+#define TX_BUF_SIZE 100
+#define RX_BUF_SIZE 100
 
-enum { max_length = 1024 };
+using namespace std;
+using boost::asio::ip::tcp;
 
 int main(int argc, char* argv[])
 {
-  try
+  if (argc != 3)
   {
-    if (argc != 3)
+    cerr << "Usage: blocking_tcp_echo_client <host> <port>\n";
+    return 1;
+  }
+
+  char tx_buf[TX_BUF_SIZE];
+  char rx_buf[RX_BUF_SIZE];
+
+  // connecto tcp
+  boost::asio::io_context io_context;
+  tcp::socket s(io_context);
+  tcp::resolver resolver(io_context);
+  boost::asio::connect(s, resolver.resolve(argv[1], argv[2]));
+
+  while (true) {
+
+    // send twist
     {
-      std::cerr << "Usage: blocking_tcp_echo_client <host> <port>\n";
-      return 1;
+      Twist twist_send;
+      fstream output(tx_buf);
+      if (!twist_send.SerializeToOstream(&output)) {
+        cerr << "Failed to write twist to tx_buf." << endl;
+        continue;
+      }
+      boost::asio::write(s, boost::asio::buffer(tx_buf, TX_BUF_SIZE));
     }
 
-    boost::asio::io_context io_context;
+    // receive twist
+    {
+      Twist twist_reply;
+      boost::asio::read(s, boost::asio::buffer(rx_buf, RX_BUF_SIZE));
 
-    tcp::socket s(io_context);
-    tcp::resolver resolver(io_context);
-    boost::asio::connect(s, resolver.resolve(argv[1], argv[2]));
+      fstream input(rx_buf);
+      if (!twist_reply.ParseFromIstream(&input)) {
+        cerr << "Failed to parse twist." << endl;
+        return -1;
+      }
+      cout << "Reply is: ";
+      cout << twist_reply.linear().x() << twist_reply.linear().y()
+        << twist_reply.linear().z()
+        << twist_reply.angular().x() << twist_reply.angular().y()
+        << twist_reply.angular().z() << endl;
 
-    std::cout << "Enter message: ";
-    char request[max_length];
-    std::cin.getline(request, max_length);
-    size_t request_length = std::strlen(request);
-    boost::asio::write(s, boost::asio::buffer(request, request_length));
+    }
 
-    char reply[max_length];
-    size_t reply_length = boost::asio::read(s,
-        boost::asio::buffer(reply, request_length));
-    std::cout << "Reply is: ";
-    std::cout.write(reply, reply_length);
-    std::cout << "\n";
-  }
-  catch (std::exception& e)
-  {
-    std::cerr << "Exception: " << e.what() << "\n";
   }
 
   return 0;
