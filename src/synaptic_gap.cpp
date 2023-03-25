@@ -1,4 +1,4 @@
- /*
+/*
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -16,15 +16,16 @@
 #include <pthread.h>
 
 #include "synapse_protobuf/twist.pb.h"
+#include "synapse_protobuf/joy.pb.h"
+#include "synapse_protobuf/odometry.pb.h"
 #include "synapse_tinyframe/TinyFrame.h"
 #include "synapse_tinyframe/utils.h"
+#include "synapse_tinyframe/SynapseTopics.h"
 
 #define MY_STACK_SIZE 500
 #define MY_PRIORITY 5
 
 #define RX_BUF_SIZE 1024
-
-#define TYPE_TWIST 0x01
 
 #define BIND_PORT 4242
 #define CONFIG_SYNAPTIC_GAP_ETHERNET
@@ -71,13 +72,11 @@ void TF_WriteImpl(TinyFrame *tf, const uint8_t *buf, uint32_t len)
 static TF_Result genericListener(TinyFrame *tf, TF_Msg *msg)
 {
   (void)tf;
-  printf("generic listener\n");
-
   dumpFrameInfo(msg);
   return TF_STAY;
 }
 
-static TF_Result twistListener(TinyFrame *tf, TF_Msg *msg)
+static TF_Result cmdVelListener(TinyFrame *tf, TF_Msg *msg)
 {
   (void)tf;
 
@@ -87,7 +86,7 @@ static TF_Result twistListener(TinyFrame *tf, TF_Msg *msg)
   /* Create a stream that reads from the buffer. */
   string data((char *)msg->data, msg->len);
   if (!message.ParseFromString(data)) {
-    cerr << "Failed to parse twist." << endl;
+    cerr << "Failed to parse cmd vel." << endl;
     return TF_STAY;
   }
 
@@ -95,6 +94,40 @@ static TF_Result twistListener(TinyFrame *tf, TF_Msg *msg)
   printf("%10.4f %10.4f %10.4f %10.4f %10.4f %10.4f\n", 
     message.linear().x(), message.linear().y(), message.linear().z(),
     message.angular().x(), message.angular().y(), message.angular().z());
+
+  return TF_STAY;
+}
+
+static TF_Result joyListener(TinyFrame *tf, TF_Msg *msg)
+{
+  (void)tf;
+
+  /* Allocate space for the decoded message. */
+  Joy message;
+
+  /* Create a stream that reads from the buffer. */
+  string data((char *)msg->data, msg->len);
+  if (!message.ParseFromString(data)) {
+    cerr << "Failed to parse joy." << endl;
+    return TF_STAY;
+  }
+
+  return TF_STAY;
+}
+
+static TF_Result odometryExternalListener(TinyFrame *tf, TF_Msg *msg)
+{
+  (void)tf;
+
+  /* Allocate space for the decoded message. */
+  Odometry message;
+
+  /* Create a stream that reads from the buffer. */
+  string data((char *)msg->data, msg->len);
+  if (!message.ParseFromString(data)) {
+    cerr << "Failed to parse odometry." << endl;
+    return TF_STAY;
+  }
 
   return TF_STAY;
 }
@@ -109,10 +142,12 @@ void * uart_entry_point(void *)
   tf0 = TF_Init(TF_MASTER); // 1 = master, 0 = slave
   tf0->usertag = 0;
   TF_AddGenericListener(tf0, genericListener);
-  TF_AddTypeListener(tf0, TYPE_TWIST, twistListener);
+  TF_AddTypeListener(tf0, SYNAPSE_TOPIC_CMD_VEL, cmdVelListener);
+  TF_AddTypeListener(tf0, SYNAPSE_TOPIC_JOY, joyListener);
+  TF_AddTypeListener(tf0, SYNAPSE_TOPIC_ODOMETRY_EXTERNAL, odometryExternalListener);
 
   while (true) {
-    // send twist message
+    // send cmd vel message
     {
       Twist message;
       message.mutable_linear()->set_x(1);
@@ -124,10 +159,10 @@ void * uart_entry_point(void *)
 
       string data;
       if (!message.SerializeToString(&data)) {
-        cerr << "Failed to write twist." << endl;
+        cerr << "Failed to write cmd vel." << endl;
       } else {
         TF_ClearMsg(&msg);
-        msg.type = TYPE_TWIST;
+        msg.type = SYNAPSE_TOPIC_CMD_VEL;
         msg.len = data.length();
         msg.data = (const uint8_t *)data.c_str();
         TF_Send(tf0, &msg);
@@ -176,7 +211,9 @@ void * ethernet_entry_point(void *)
   tf0 = TF_Init(TF_MASTER); // 1 = master, 0 = slave
   tf0->usertag = 1;
   TF_AddGenericListener(tf0, genericListener);
-  TF_AddTypeListener(tf0, TYPE_TWIST, twistListener);
+  TF_AddTypeListener(tf0, SYNAPSE_TOPIC_CMD_VEL, cmdVelListener);
+  TF_AddTypeListener(tf0, SYNAPSE_TOPIC_JOY, joyListener);
+  TF_AddTypeListener(tf0, SYNAPSE_TOPIC_ODOMETRY_EXTERNAL, odometryExternalListener);
 
   while (1) {
 
@@ -203,10 +240,10 @@ void * ethernet_entry_point(void *)
 
         string data;
         if (!message.SerializeToString(&data)) {
-          cerr << "Failed to write twist." << endl;
+          cerr << "Failed to write cmd vel." << endl;
         } else {
           TF_ClearMsg(&msg);
-          msg.type = TYPE_TWIST;
+          msg.type = SYNAPSE_TOPIC_CMD_VEL;
           msg.len = data.length();
           msg.data = (const uint8_t *)data.c_str();
           TF_Send(tf0, &msg);
