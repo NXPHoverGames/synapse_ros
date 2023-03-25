@@ -142,9 +142,9 @@ void * uart_entry_point(void *)
   tf0 = TF_Init(TF_MASTER); // 1 = master, 0 = slave
   tf0->usertag = 0;
   TF_AddGenericListener(tf0, genericListener);
-  TF_AddTypeListener(tf0, SYNAPSE_TOPIC_CMD_VEL, cmdVelListener);
-  TF_AddTypeListener(tf0, SYNAPSE_TOPIC_JOY, joyListener);
-  TF_AddTypeListener(tf0, SYNAPSE_TOPIC_ODOMETRY_EXTERNAL, odometryExternalListener);
+  TF_AddTypeListener(tf0, SYNAPSE_IN_CMD_VEL_TOPIC, cmdVelListener);
+  TF_AddTypeListener(tf0, SYNAPSE_IN_JOY_TOPIC, joyListener);
+  TF_AddTypeListener(tf0, SYNAPSE_IN_ODOMETRY_TOPIC, odometryExternalListener);
 
   while (true) {
     // send cmd vel message
@@ -162,7 +162,7 @@ void * uart_entry_point(void *)
         cerr << "Failed to write cmd vel." << endl;
       } else {
         TF_ClearMsg(&msg);
-        msg.type = SYNAPSE_TOPIC_CMD_VEL;
+        msg.type = SYNAPSE_IN_CMD_VEL_TOPIC;
         msg.len = data.length();
         msg.data = (const uint8_t *)data.c_str();
         TF_Send(tf0, &msg);
@@ -211,9 +211,9 @@ void * ethernet_entry_point(void *)
   tf0 = TF_Init(TF_MASTER); // 1 = master, 0 = slave
   tf0->usertag = 1;
   TF_AddGenericListener(tf0, genericListener);
-  TF_AddTypeListener(tf0, SYNAPSE_TOPIC_CMD_VEL, cmdVelListener);
-  TF_AddTypeListener(tf0, SYNAPSE_TOPIC_JOY, joyListener);
-  TF_AddTypeListener(tf0, SYNAPSE_TOPIC_ODOMETRY_EXTERNAL, odometryExternalListener);
+  TF_AddTypeListener(tf0, SYNAPSE_IN_CMD_VEL_TOPIC, cmdVelListener);
+  TF_AddTypeListener(tf0, SYNAPSE_IN_JOY_TOPIC, joyListener);
+  TF_AddTypeListener(tf0, SYNAPSE_IN_ODOMETRY_TOPIC, odometryExternalListener);
 
   while (1) {
 
@@ -243,7 +243,7 @@ void * ethernet_entry_point(void *)
           cerr << "Failed to write cmd vel." << endl;
         } else {
           TF_ClearMsg(&msg);
-          msg.type = SYNAPSE_TOPIC_CMD_VEL;
+          msg.type = SYNAPSE_IN_CMD_VEL_TOPIC;
           msg.len = data.length();
           msg.data = (const uint8_t *)data.c_str();
           TF_Send(tf0, &msg);
