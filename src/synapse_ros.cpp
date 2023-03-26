@@ -28,8 +28,8 @@
 #define RX_BUF_SIZE 1024
 
 #define BIND_PORT 4242
-#define CONFIG_SYNAPTIC_GAP_ETHERNET
-//#define CONFIG_SYNAPTIC_GAP_UART
+#define CONFIG_SYNAPSE_ROS_ETHERNET
+//#define CONFIG_SYNAPSE_ROS_UART
 
 using namespace std;
 
@@ -41,7 +41,7 @@ static int sockfd = 0;
  */
 void TF_WriteImpl(TinyFrame *tf, const uint8_t *buf, uint32_t len)
 {
-#if defined(CONFIG_SYNAPTIC_GAP_UART)
+#if defined(CONFIG_SYNAPSE_ROS_UART)
   // uart
   if (tf->usertag == 0) {
     for (int i=0; i<len; i++) {
@@ -50,7 +50,7 @@ void TF_WriteImpl(TinyFrame *tf, const uint8_t *buf, uint32_t len)
   }
 #endif
 
-#if defined(CONFIG_SYNAPTIC_GAP_ETHERNET)
+#if defined(CONFIG_SYNAPSE_ROS_ETHERNET)
   // ethernet
   if (tf->usertag == 1) {
     int out_len;
@@ -132,7 +132,7 @@ static TF_Result odometryExternalListener(TinyFrame *tf, TF_Msg *msg)
   return TF_STAY;
 }
 
-#if defined(CONFIG_SYNAPTIC_GAP_UART)
+#if defined(CONFIG_SYNAPSE_ROS_UART)
 void * uart_entry_point(void *)
 {
   TF_Msg msg;
@@ -185,7 +185,7 @@ void * uart_entry_point(void *)
 }
 #endif
 
-#if defined(CONFIG_SYNAPTIC_GAP_ETHERNET)
+#if defined(CONFIG_SYNAPSE_ROS_ETHERNET)
 void * ethernet_entry_point(void *)
 {
 
@@ -267,21 +267,21 @@ void * ethernet_entry_point(void *)
 #endif
 
 int main() {
-#if defined(CONFIG_SYNAPTIC_GAP_ETHERNET)
+#if defined(CONFIG_SYNAPSE_ROS_ETHERNET)
   pthread_t ptid_ethernet;
   pthread_create(&ptid_ethernet, NULL, &ethernet_entry_point, NULL);
 #endif
 
-#if defined(CONFIG_SYNAPTIC_GAP_UART)
+#if defined(CONFIG_SYNAPSE_ROS_UART)
   pthread_t ptid_uart;
   pthread_create(&ptid_uart, NULL, &uart_entry_point, NULL);
 #endif
 
-#if defined(CONFIG_SYNAPTIC_GAP_ETHERNET)
+#if defined(CONFIG_SYNAPSE_ROS_ETHERNET)
   pthread_join(ptid_ethernet, NULL);
 #endif
 
-#if defined(CONFIG_SYNAPTIC_GAP_UART)
+#if defined(CONFIG_SYNAPSE_ROS_UART)
   pthread_join(ptid_uart, NULL);
 #endif
 

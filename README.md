@@ -1,2 +1,2 @@
-# synaptic_gap
-Cerebri  interface to ROS2
+# synapse_ros
+Synapse interface to ROS 2
