@@ -102,33 +102,17 @@ void my_log_handler(google::protobuf::LogLevel level, const char * filename, int
 
 TF_Result TcpClient::actuatorsListener(TinyFrame *tf, TF_Msg *frame)
 {
-    (void)tf;
-    google::protobuf::SetLogHandler(my_log_handler);
+    // parse protobuf message
     Actuators msg;
-
-    // get tcp client attached to tf pointer in userdata
-    TcpClient * tcp_client = (TcpClient *)tf->userdata;
-    RosClient * ros_client = tcp_client->ros_.get();
-
     if (!msg.ParseFromArray(frame->data, frame->len)) {
         std::cerr << "Failed to parse actuators" << std::endl;
         return TF_STAY;
     }
-    //gz::msgs::Actuators gz_msg;
 
-    for (auto it = msg.position().begin(); it != msg.position().end(); ++it) {
-        //gz_msg.add_position(*it);
-    }
-
-    for (auto it = msg.velocity().begin(); it != msg.velocity().end(); ++it) {
-        //gz_msg.add_velocity(*it);
-    }
-
-    for (auto it = msg.normalized().begin(); it != msg.normalized().end(); ++it) {
-        //gz_msg.add_normalized(*it);
-    }
-
-    //gz_client->pub_actuators_.Publish(gz_msg);
+    // send to ros
+    TcpClient * tcp_client = (TcpClient *)tf->userdata;
+    RosClient * ros_client = tcp_client->ros_.get();
+    ros_client->publish_actuators(msg);
     return TF_STAY;
 }
 

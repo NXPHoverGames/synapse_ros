@@ -37,6 +37,7 @@ int main(int argc, char ** argv) {
     // create tinyframe
     g_tf = std::make_shared<TinyFrame>(*(TF_Init(TF_MASTER)));
 
+
     // create ros client
     g_ros_client = std::make_shared<RosClient>(g_tf);
 

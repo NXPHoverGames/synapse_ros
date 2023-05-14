@@ -8,6 +8,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(actuator_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(synapse_protobuf REQUIRED)
 find_package(synapse_tinyframe REQUIRED)
@@ -18,7 +19,7 @@ add_executable(${PROJECT_NAME}
   src/clients/ros_client.cpp
   )
 ament_target_dependencies(${PROJECT_NAME}
-  synapse_tinyframe synapse_protobuf sensor_msgs rclcpp)
+  synapse_tinyframe synapse_protobuf sensor_msgs actuator_msgs rclcpp)
 
 #==========================================================
 # install
