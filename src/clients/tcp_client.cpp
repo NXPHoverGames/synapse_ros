@@ -1,5 +1,5 @@
 #include "tcp_client.hpp"
-#include "ros_client.hpp"
+#include "../synapse_ros.hpp"
 
 #include "synapse_protobuf/actuators.pb.h"
 #include "synapse_protobuf/twist.pb.h"
@@ -111,8 +111,9 @@ TF_Result TcpClient::actuatorsListener(TinyFrame *tf, TF_Msg *frame)
 
     // send to ros
     TcpClient * tcp_client = (TcpClient *)tf->userdata;
-    RosClient * ros_client = tcp_client->ros_.get();
-    ros_client->publish_actuators(msg);
+    if(tcp_client->ros_ != NULL) {
+        tcp_client->ros_->publish_actuators(msg);
+    }
     return TF_STAY;
 }
 

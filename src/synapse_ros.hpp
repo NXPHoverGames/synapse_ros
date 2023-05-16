@@ -19,16 +19,21 @@
 class TcpClient;
 
 
-class RosClient : public rclcpp::Node  {
+void tcp_entry_point();
+
+
+class SynapseRos : public rclcpp::Node  {
   public:
-    RosClient(const std::shared_ptr<TinyFrame> & tf);
+    SynapseRos();
+    virtual ~SynapseRos();
     void tf_send(TF_Msg & frame) const;
     void publish_actuators(const Actuators & msg);
   private:
-    std::shared_ptr<TinyFrame> tf_;
+    std::shared_ptr<TinyFrame> tf_{TF_Init(TF_MASTER)};
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy_;
     rclcpp::Publisher<actuator_msgs::msg::Actuators>::SharedPtr pub_actuators_;
     void joy_callback(const sensor_msgs::msg::Joy & msg) const;
+    std::shared_ptr<std::thread> tcp_thread_;
 };
 
 // vi: ts=4 sw=4 et

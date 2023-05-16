@@ -16,7 +16,6 @@ find_package(synapse_tinyframe REQUIRED)
 add_executable(${PROJECT_NAME}
   src/${PROJECT_NAME}.cpp
   src/clients/tcp_client.cpp
-  src/clients/ros_client.cpp
   )
 ament_target_dependencies(${PROJECT_NAME}
   synapse_tinyframe synapse_protobuf sensor_msgs actuator_msgs rclcpp)
@@ -28,6 +27,11 @@ ament_target_dependencies(${PROJECT_NAME}
 install(TARGETS
   ${PROJECT_NAME}
   DESTINATION lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}
 )
 
 #==========================================================

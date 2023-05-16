@@ -10,7 +10,7 @@
 #include "synapse_tinyframe/utils.h"
 
 
-class RosClient;
+class SynapseRos;
 
 
 class TcpClient {
@@ -27,7 +27,7 @@ class TcpClient {
     int port_;
     bool connected_{false};
   public:
-    std::shared_ptr<RosClient> ros_;
+    SynapseRos * ros_{NULL};
     TcpClient(std::string host, int port, const std::shared_ptr<TinyFrame> & tf);
     void run_for(std::chrono::seconds sec);
     void write(const uint8_t *buf, uint32_t len);
