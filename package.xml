@@ -17,6 +17,8 @@
   <depend>sensor_msgs</depend>
   <depend>synapse_protobuf</depend>
   <depend>synapse_tinyframe</depend>
+  <depend>synapse_msgs</depend>
+  <depend>geometry_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

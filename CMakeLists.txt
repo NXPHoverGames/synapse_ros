@@ -9,16 +9,20 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(actuator_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(synapse_protobuf REQUIRED)
 find_package(synapse_tinyframe REQUIRED)
+find_package(synapse_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 add_executable(${PROJECT_NAME}
   src/${PROJECT_NAME}.cpp
   src/clients/tcp_client.cpp
   )
+
 ament_target_dependencies(${PROJECT_NAME}
-  synapse_tinyframe synapse_protobuf sensor_msgs actuator_msgs rclcpp)
+  synapse_tinyframe synapse_protobuf sensor_msgs actuator_msgs rclcpp nav_msgs synapse_msgs geometry_msgs)
 
 #==========================================================
 # install

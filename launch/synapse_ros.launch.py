@@ -22,6 +22,7 @@ def generate_launch_description():
 
     synapse_ros = Node(
         package='synapse_ros',
+        namespace='cerebri',
         executable='synapse_ros',
         parameters=[{
             'host': LaunchConfiguration('host'),
