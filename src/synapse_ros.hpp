@@ -3,13 +3,8 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-//#include <actuator_msgs/msg/detail/actuators__struct.hpp>
-#include <actuator_msgs/msg/detail/actuators__struct.hpp>
 #include <memory>
-//#include <nav_msgs/msg/detail/odometry__struct.hpp>
-#include <nav_msgs/msg/detail/odometry__struct.hpp>
 #include <rclcpp/subscription_options.hpp>
-#include <synapse_msgs/msg/detail/bezier_trajectory__struct.hpp>
 #include "synapse_tinyframe/TinyFrame.h"
 
 #include "actuator_msgs/msg/actuators.hpp"

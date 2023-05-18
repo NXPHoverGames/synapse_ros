@@ -1,8 +1,5 @@
 #include "synapse_ros.hpp"
 #include "clients/tcp_client.hpp"
-#include <actuator_msgs/msg/detail/actuators__struct.hpp>
-#include <geometry_msgs/msg/detail/twist__struct.hpp>
-#include <nav_msgs/msg/detail/odometry__struct.hpp>
 #include <synapse_tinyframe/SynapseTopics.h>
 
 using std::placeholders::_1;
