@@ -58,7 +58,7 @@ void TcpClient::tick(const boost::system::error_code& /*e*/) {
         sockfd_.async_receive(boost::asio::buffer(rx_buf_, rx_buf_length_),
                 std::bind(&TcpClient::rx_handler, this, _1, _2));
     } else {
-        std::cout << "tcp connecting..." << std::endl;
+        std::cout << "tcp connecting to: " << host_ << ":" << port_ << std::endl;
         boost::asio::async_connect(
             sockfd_,
             resolver_.resolve(host_, std::to_string(port_)),

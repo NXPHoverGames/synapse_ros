@@ -16,7 +16,7 @@ void tcp_entry_point()
 
 SynapseRos::SynapseRos() :
     Node("synapse_ros") {
-    this->declare_parameter("host", "192.0.2.2");
+    this->declare_parameter("host", "192.0.2.1");
     this->declare_parameter("port", 4242);
 
     std::string host = this->get_parameter("host").as_string();
@@ -24,23 +24,23 @@ SynapseRos::SynapseRos() :
 
     // subscriptions ros -> cerebri
     sub_actuators_ = this->create_subscription<actuator_msgs::msg::Actuators>(
-            "to/actuators", 10, std::bind(&SynapseRos::actuators_callback, this, _1));
+            "in/actuators", 10, std::bind(&SynapseRos::actuators_callback, this, _1));
 
     sub_bezier_trajectory_ = this->create_subscription<synapse_msgs::msg::BezierTrajectory>(
-            "to/bezier_trajectory", 10, std::bind(&SynapseRos::bezier_trajectory_callback, this, _1));
+            "in/bezier_trajectory", 10, std::bind(&SynapseRos::bezier_trajectory_callback, this, _1));
 
     sub_cmd_vel_ = this->create_subscription<geometry_msgs::msg::Twist>(
-            "to/cmd_vel", 10, std::bind(&SynapseRos::cmd_vel_callback, this, _1));
+            "in/cmd_vel", 10, std::bind(&SynapseRos::cmd_vel_callback, this, _1));
 
     sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>(
-            "to/joy", 10, std::bind(&SynapseRos::joy_callback, this, _1));
+            "in/joy", 10, std::bind(&SynapseRos::joy_callback, this, _1));
 
     sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>(
-            "to/odometry", 10, std::bind(&SynapseRos::odom_callback, this, _1));
+            "in/odometry", 10, std::bind(&SynapseRos::odom_callback, this, _1));
 
     // publications cerebri -> ros
-    pub_actuators_ = this->create_publisher<actuator_msgs::msg::Actuators>("from/actuators", 10);
-    pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("from/odometry", 10);
+    pub_actuators_ = this->create_publisher<actuator_msgs::msg::Actuators>("out/actuators", 10);
+    pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("out/odometry", 10);
 
     // create tcp client
     std::cout << "creating tcp client\n" << std::endl;
