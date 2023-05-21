@@ -7,7 +7,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 ARGUMENTS = [
-    DeclareLaunchArgument('host', default_value='192.0.2.1',
+    DeclareLaunchArgument('host', default_value='192.0.2.2',
                           description='port for cerebri'),
     DeclareLaunchArgument('port', default_value='4242',
                           description='tcp port for cerebri'),
