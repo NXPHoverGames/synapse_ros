@@ -21,7 +21,7 @@ def generate_launch_description():
     port = LaunchConfiguration('port')
 
     synapse_ros = Node(
-        prefix='xterm -e gdb --args',
+        #prefix='xterm -e gdb --args',
         package='synapse_ros',
         namespace='cerebri',
         executable='synapse_ros',
