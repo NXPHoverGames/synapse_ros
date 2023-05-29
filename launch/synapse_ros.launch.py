@@ -29,7 +29,10 @@ def generate_launch_description():
             'host': LaunchConfiguration('host'),
             'port': LaunchConfiguration('port')
         }],
-        output='screen')
+        output='screen',
+        remappings=[
+            ('/cerebri/in/cmd_vel', '/cmd_vel')
+        ])
 
     ld = LaunchDescription(ARGUMENTS)
     ld.add_action(synapse_ros)
