@@ -22,9 +22,6 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "synapse_protobuf/twist.pb.h"
 
-#include "synapse_msgs/msg/bezier_trajectory.hpp"
-#include "synapse_protobuf/bezier_trajectory.pb.h"
-
 
 class TcpClient;
 

@@ -165,7 +165,7 @@ void SynapseRos::bezier_trajectory_callback(const synapse_msgs::msg::BezierTraje
     }
 
     for (auto i = 0u; i < msg.y.size(); ++i) {
-        syn_msg.add_y(msg.x[i]);
+        syn_msg.add_y(msg.y[i]);
     }
 
     for (auto i = 0u; i < msg.z.size(); ++i) {
