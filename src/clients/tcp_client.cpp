@@ -27,6 +27,30 @@ static void write_tcp(TinyFrame* tf, const uint8_t* buf, uint32_t len)
 }
 
 TcpClient::TcpClient(std::string host, int port, const std::shared_ptr<TinyFrame> & tf) : host_(host), port_(port) {
+    // Set socket options
+    std::cout << "creating option" << std::endl;
+    sockfd_.open(boost::asio::ip::tcp::v4());
+    boost::asio::socket_base::keep_alive keep_alive(true);
+    sockfd_.set_option(keep_alive);
+
+    // the timeout value
+    unsigned int timeout_milli = 1000;
+
+    // platform-specific switch
+#if defined _WIN32 || defined WIN32 || defined OS_WIN64 || defined _WIN64 || defined WIN64 || defined WINNT
+    // use windows-specific time
+    int32_t timeout = timeout_milli;
+    setsockopt(sockfd_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+    setsockopt(sockfd_.native_handle(), SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout));
+#else
+    // assume everything else is posix
+    struct timeval tv;
+    tv.tv_sec  = timeout_milli / 1000;
+    tv.tv_usec = (timeout_milli % 1000) * 1000;
+    setsockopt(sockfd_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    setsockopt(sockfd_.native_handle(), SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+#endif
+    
     // Set up the TinyFrame library
     tf_ = tf;
     tf_->usertag = 0;
@@ -99,9 +123,10 @@ void TcpClient::rx_handler(const boost::system::error_code & ec, std::size_t byt
         connected_ = false;
     } else if (ec != boost::system::errc::success) {
         std::cerr << "rx error: " << ec.message() << std::endl;
+    } else if (ec == boost::system::errc::success) {
+        const std::lock_guard<std::mutex> lock(guard_rx_buf_);
+        TF_Accept(tf_.get(), rx_buf_, bytes_transferred);
     }
-    const std::lock_guard<std::mutex> lock(guard_rx_buf_);
-    TF_Accept(tf_.get(), rx_buf_, bytes_transferred);
 }
 
 void my_log_handler(google::protobuf::LogLevel level, const char * filename, int line, const std::string & message) {

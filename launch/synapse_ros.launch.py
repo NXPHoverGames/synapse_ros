@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, Shutdown
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -32,7 +32,9 @@ def generate_launch_description():
         output='screen',
         remappings=[
             ('/cerebri/in/cmd_vel', '/cmd_vel')
-        ])
+        ],
+        on_exit=Shutdown()
+        )
 
     ld = LaunchDescription(ARGUMENTS)
     ld.add_action(synapse_ros)
