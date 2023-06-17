@@ -34,8 +34,8 @@ class SynapseRos : public rclcpp::Node  {
     SynapseRos();
     virtual ~SynapseRos();
     void tf_send(int topic, const std::string & data) const;
-    void publish_actuators(const Actuators & msg);
-    void publish_odometry(const Odometry & msg);
+    void publish_actuators(const synapse::msgs::Actuators & msg);
+    void publish_odometry(const synapse::msgs::Odometry & msg);
   private:
     std::shared_ptr<TinyFrame> tf_{TF_Init(TF_MASTER)};
 

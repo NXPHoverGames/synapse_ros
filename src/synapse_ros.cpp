@@ -56,7 +56,7 @@ SynapseRos::~SynapseRos() {
     tcp_thread_->join();
 }
 
-void SynapseRos::publish_actuators(const Actuators & msg) {
+void SynapseRos::publish_actuators(const synapse::msgs::Actuators & msg) {
     actuator_msgs::msg::Actuators ros_msg;
 
     // header
@@ -84,7 +84,7 @@ void SynapseRos::publish_actuators(const Actuators & msg) {
     pub_actuators_->publish(ros_msg);
 }
 
-void SynapseRos::publish_odometry(const Odometry & msg) {
+void SynapseRos::publish_odometry(const synapse::msgs::Odometry & msg) {
     nav_msgs::msg::Odometry ros_msg;
 
     // header
@@ -121,7 +121,7 @@ void SynapseRos::publish_odometry(const Odometry & msg) {
 
 
 void SynapseRos::actuators_callback(const actuator_msgs::msg::Actuators & msg) const {
-    Actuators syn_msg;
+    synapse::msgs::Actuators syn_msg;
 
     // header
     syn_msg.mutable_header()->set_frame_id(msg.header.frame_id);
@@ -148,7 +148,7 @@ void SynapseRos::actuators_callback(const actuator_msgs::msg::Actuators & msg) c
 }
 
 void SynapseRos::bezier_trajectory_callback(const synapse_msgs::msg::BezierTrajectory & msg) const {
-    BezierTrajectory syn_msg;
+    synapse::msgs::BezierTrajectory syn_msg;
 
     syn_msg.set_sequence(msg.sequence);
     syn_msg.set_time_start(msg.time_start);
@@ -184,7 +184,7 @@ void SynapseRos::bezier_trajectory_callback(const synapse_msgs::msg::BezierTraje
 }
 
 void SynapseRos::cmd_vel_callback(const geometry_msgs::msg::Twist & msg) const {
-    Twist syn_msg;
+    synapse::msgs::Twist syn_msg;
 
     // twist
     syn_msg.mutable_linear()->set_x(msg.linear.x);
@@ -202,7 +202,7 @@ void SynapseRos::cmd_vel_callback(const geometry_msgs::msg::Twist & msg) const {
 }
 
 void SynapseRos::joy_callback(const sensor_msgs::msg::Joy & msg) const {
-    Joy syn_msg;
+    synapse::msgs::Joy syn_msg;
     for (auto i = 0u; i < msg.axes.size(); ++i) {
         syn_msg.add_axes(msg.axes[i]);
     }
@@ -220,7 +220,7 @@ void SynapseRos::joy_callback(const sensor_msgs::msg::Joy & msg) const {
 
 void SynapseRos::odom_callback(const nav_msgs::msg::Odometry & msg) const {
     // construct empty syn_msg
-    Odometry syn_msg{};
+    synapse::msgs::Odometry syn_msg{};
 
     // child frame
     syn_msg.set_child_frame_id(msg.child_frame_id);

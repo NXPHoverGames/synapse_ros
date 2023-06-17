@@ -11,7 +11,6 @@
 #include <boost/date_time/posix_time/posix_time_config.hpp>
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
 #include <boost/system/error_code.hpp>
-#include <google/protobuf/stubs/logging.h>
 #include <memory>
 
 using std::placeholders::_1;
@@ -30,27 +29,19 @@ TcpClient::TcpClient(std::string host, int port, const std::shared_ptr<TinyFrame
     // Set socket options
     std::cout << "creating option" << std::endl;
     sockfd_.open(boost::asio::ip::tcp::v4());
-    boost::asio::socket_base::keep_alive keep_alive(true);
-    sockfd_.set_option(keep_alive);
+    if (!sockfd_.is_open()) {
+        std::cerr << "failed to open socket" << std::endl;
+    }
+    sockfd_.set_option(boost::asio::detail::socket_option::integer<SOL_SOCKET, SO_KEEPALIVE>{ 1 });
+    sockfd_.set_option(boost::asio::detail::socket_option::integer<SOL_SOCKET, SO_RCVTIMEO>{ 1 });
+    sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_KEEPIDLE>{ 1 });
+    sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_KEEPCNT>{ 3 });
+    sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_KEEPINTVL>{ 1 });
+    sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_KEEPINTVL>{ 1 });
+    sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_USER_TIMEOUT>{ -1 });
+    sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_SYNCNT>{ 0 });
+    sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_DEFER_ACCEPT>{ 0 });
 
-    // the timeout value
-    unsigned int timeout_milli = 1000;
-
-    // platform-specific switch
-#if defined _WIN32 || defined WIN32 || defined OS_WIN64 || defined _WIN64 || defined WIN64 || defined WINNT
-    // use windows-specific time
-    int32_t timeout = timeout_milli;
-    setsockopt(sockfd_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
-    setsockopt(sockfd_.native_handle(), SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout));
-#else
-    // assume everything else is posix
-    struct timeval tv;
-    tv.tv_sec  = timeout_milli / 1000;
-    tv.tv_usec = (timeout_milli % 1000) * 1000;
-    setsockopt(sockfd_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-    setsockopt(sockfd_.native_handle(), SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-#endif
-    
     // Set up the TinyFrame library
     tf_ = tf;
     tf_->usertag = 0;
@@ -94,7 +85,7 @@ void TcpClient::tick(const boost::system::error_code& /*e*/) {
     if (connected_) {
         wait = boost::posix_time::milliseconds(100);
     } else {
-        wait = boost::posix_time::seconds(5);
+        wait = boost::posix_time::seconds(1);
     }
 
     timer_.expires_at(timer_.expires_at() + wait);
@@ -129,18 +120,10 @@ void TcpClient::rx_handler(const boost::system::error_code & ec, std::size_t byt
     }
 }
 
-void my_log_handler(google::protobuf::LogLevel level, const char * filename, int line, const std::string & message) {
-    static const char* level_names[] = { "INFO", "WARNING", "ERROR", "FATAL" };
-    fprintf(stderr, "[libprotobuf %s %s:%d] %s\n",
-          level_names[level], filename, line, message.c_str());
-    fflush(stderr);  // Needed on MSVC.
-}
-
-
 TF_Result TcpClient::actuatorsListener(TinyFrame *tf, TF_Msg *frame)
 {
     // parse protobuf message
-    Actuators msg;
+    synapse::msgs::Actuators msg;
     if (!msg.ParseFromArray(frame->data, frame->len)) {
         std::cerr << "Failed to parse actuators" << std::endl;
         return TF_STAY;
@@ -157,7 +140,7 @@ TF_Result TcpClient::actuatorsListener(TinyFrame *tf, TF_Msg *frame)
 TF_Result TcpClient::out_cmd_vel_Listener(TinyFrame *tf, TF_Msg *frame)
 {
     (void)tf;
-    Twist msg;
+    synapse::msgs::Twist msg;
     if (!msg.ParseFromArray(frame->data, frame->len)) {
         std::cerr << "Failed to out_cmd_vel" << std::endl;
         return TF_STAY;
