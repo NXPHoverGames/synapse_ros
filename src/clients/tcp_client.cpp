@@ -7,6 +7,7 @@
 #include "synapse_protobuf/odometry.pb.h"
 
 #include "synapse_tinyframe/SynapseTopics.h"
+#include <boost/asio/detail/socket_option.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/date_time/posix_time/posix_time_config.hpp>
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
@@ -32,15 +33,36 @@ TcpClient::TcpClient(std::string host, int port, const std::shared_ptr<TinyFrame
     if (!sockfd_.is_open()) {
         std::cerr << "failed to open socket" << std::endl;
     }
-    sockfd_.set_option(boost::asio::detail::socket_option::integer<SOL_SOCKET, SO_KEEPALIVE>{ 1 });
-    sockfd_.set_option(boost::asio::detail::socket_option::integer<SOL_SOCKET, SO_RCVTIMEO>{ 1 });
-    sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_KEEPIDLE>{ 1 });
-    sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_KEEPCNT>{ 3 });
-    sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_KEEPINTVL>{ 1 });
-    sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_KEEPINTVL>{ 1 });
-    sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_USER_TIMEOUT>{ -1 });
-    sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_SYNCNT>{ 0 });
-    sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_DEFER_ACCEPT>{ 0 });
+
+    try {
+        sockfd_.set_option(boost::asio::detail::socket_option::integer<SOL_SOCKET, SO_KEEPALIVE>{ 1 });
+    } catch (std::exception & e) {
+        std::cerr << e.what() << "failed to set keep alive" << std::endl;
+    }
+
+    try {
+        sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_KEEPIDLE>{ 1 });
+    } catch (std::exception & e) {
+        std::cerr << e.what() << "failed to set keepidle" << std::endl;
+    }
+
+    try {
+        sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_KEEPCNT>{ 3 });
+    } catch (std::exception & e) {
+        std::cerr << e.what() << "failed to set keepcnt" << std::endl;
+    }
+
+    try {
+        sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_KEEPINTVL>{ 1 });
+    } catch (std::exception & e) {
+        std::cerr << e.what() << "failed to set keepintvl" << std::endl;
+    }
+
+    try {
+        sockfd_.set_option(boost::asio::detail::socket_option::integer<IPPROTO_TCP, TCP_SYNCNT>{ 1 });
+    } catch (std::exception & e) {
+        std::cerr << e.what() << "failed to set user syncnt" << std::endl;
+    }
 
     // Set up the TinyFrame library
     tf_ = tf;

@@ -33,7 +33,8 @@ def generate_launch_description():
         remappings=[
             ('/cerebri/in/cmd_vel', '/cmd_vel')
         ],
-        on_exit=Shutdown()
+        on_exit=Shutdown(),
+        prefix=['xterm -e gdb -ex=r --args'],
         )
 
     ld = LaunchDescription(ARGUMENTS)
