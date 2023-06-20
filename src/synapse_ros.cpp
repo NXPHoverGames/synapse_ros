@@ -150,30 +150,31 @@ void SynapseRos::actuators_callback(const actuator_msgs::msg::Actuators & msg) c
 void SynapseRos::bezier_trajectory_callback(const synapse_msgs::msg::BezierTrajectory & msg) const {
     synapse::msgs::BezierTrajectory syn_msg;
 
-    syn_msg.set_sequence(msg.sequence);
     syn_msg.set_time_start(msg.time_start);
-    syn_msg.set_time_stop(msg.time_stop);
 
     // header
     syn_msg.mutable_header()->set_frame_id(msg.header.frame_id);
     syn_msg.mutable_header()->mutable_stamp()->set_seconds(msg.header.stamp.sec);
     syn_msg.mutable_header()->mutable_stamp()->set_nanos(msg.header.stamp.nanosec);
 
-    // bezier points (x, y, z, yaw)
-    for (auto i = 0u; i < msg.x.size(); ++i) {
-        syn_msg.add_x(msg.x[i]);
-    }
+    for (auto i = 0u; i < msg.curves.size(); ++i) {
+        syn_msg.mutable_curves(i)->set_time_stop(msg.curves[i].time_stop);
 
-    for (auto i = 0u; i < msg.y.size(); ++i) {
-        syn_msg.add_y(msg.y[i]);
-    }
+        for (auto j = 0u; j < msg.curves[i].x.size(); ++j) {
+            syn_msg.mutable_curves(i)->add_x(msg.curves[i].x[j]);
+        }
 
-    for (auto i = 0u; i < msg.z.size(); ++i) {
-        syn_msg.add_z(msg.z[i]);
-    }
+        for (auto j = 0u; j < msg.curves[i].y.size(); ++j) {
+            syn_msg.mutable_curves(i)->add_y(msg.curves[i].y[j]);
+        }
 
-    for (auto i = 0u; i < msg.yaw.size(); ++i) {
-        syn_msg.add_yaw(msg.yaw[i]);
+        for (auto j = 0u; j < msg.curves[i].z.size(); ++j) {
+            syn_msg.mutable_curves(i)->add_z(msg.curves[i].z[j]);
+        }
+
+        for (auto j = 0u; j < msg.curves[i].yaw.size(); ++j) {
+            syn_msg.mutable_curves(i)->add_yaw(msg.curves[i].yaw[j]);
+        }
     }
 
     std::string data;
