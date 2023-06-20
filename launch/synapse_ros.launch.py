@@ -34,7 +34,7 @@ def generate_launch_description():
             ('/cerebri/in/cmd_vel', '/cmd_vel')
         ],
         on_exit=Shutdown(),
-        prefix=['xterm -e gdb -ex=r --args'],
+        #prefix=['xterm -e gdb -ex=r --args'],
         )
 
     ld = LaunchDescription(ARGUMENTS)
