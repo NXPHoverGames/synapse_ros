@@ -11,6 +11,9 @@ ARGUMENTS = [
                           description='port for cerebri'),
     DeclareLaunchArgument('port', default_value='4242',
                           description='tcp port for cerebri'),
+    DeclareLaunchArgument('log_level', default_value='error',
+                          choices=['info', 'warn', 'error'],
+                          description='log level'),
 ]
 
 
@@ -23,7 +26,6 @@ def generate_launch_description():
     synapse_ros = Node(
         #prefix='xterm -e gdb --args',
         package='synapse_ros',
-        namespace='cerebri',
         executable='synapse_ros',
         parameters=[{
             'host': LaunchConfiguration('host'),
@@ -33,6 +35,7 @@ def generate_launch_description():
         remappings=[
             ('/cerebri/in/cmd_vel', '/cmd_vel')
         ],
+        arguments=['--ros-args', '--log-level', LaunchConfiguration('log_level')],
         on_exit=Shutdown(),
         #prefix=['xterm -e gdb -ex=r --args'],
         )
