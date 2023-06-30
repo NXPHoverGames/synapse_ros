@@ -14,6 +14,9 @@ ARGUMENTS = [
     DeclareLaunchArgument('log_level', default_value='error',
                           choices=['info', 'warn', 'error'],
                           description='log level'),
+    DeclareLaunchArgument('use_sim_time', default_value='false',
+                          choices=['true', 'false'],
+                          description='Use sim time'),
 ]
 
 
@@ -25,11 +28,13 @@ def generate_launch_description():
 
     synapse_ros = Node(
         #prefix='xterm -e gdb --args',
+        namespace='cerebri',
         package='synapse_ros',
         executable='synapse_ros',
         parameters=[{
             'host': LaunchConfiguration('host'),
-            'port': LaunchConfiguration('port')
+            'port': LaunchConfiguration('port'),
+            'use_sim_time': LaunchConfiguration('use_sim_time'),
         }],
         output='screen',
         remappings=[
