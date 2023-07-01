@@ -1,6 +1,5 @@
 #include "synapse_ros.hpp"
 #include "clients/tcp_client.hpp"
-#include <synapse_protobuf/timestamp.pb.h>
 #include <synapse_tinyframe/SynapseTopics.h>
 
 using std::placeholders::_1;
@@ -66,8 +65,8 @@ void SynapseRos::publish_actuators(const synapse::msgs::Actuators& msg)
     if (msg.has_header()) {
         ros_msg.header.frame_id = msg.header().frame_id();
         if (msg.header().has_stamp()) {
-            ros_msg.header.stamp.sec = msg.header().stamp().seconds();
-            ros_msg.header.stamp.nanosec = msg.header().stamp().nanos();
+            ros_msg.header.stamp.sec = msg.header().stamp().sec();
+            ros_msg.header.stamp.nanosec = msg.header().stamp().nanosec();
         }
     }
 
@@ -95,8 +94,8 @@ void SynapseRos::publish_odometry(const synapse::msgs::Odometry& msg)
     if (msg.has_header()) {
         ros_msg.header.frame_id = msg.header().frame_id();
         if (msg.header().has_stamp()) {
-            ros_msg.header.stamp.sec = msg.header().stamp().seconds();
-            ros_msg.header.stamp.nanosec = msg.header().stamp().nanos();
+            ros_msg.header.stamp.sec = msg.header().stamp().sec();
+            ros_msg.header.stamp.nanosec = msg.header().stamp().nanosec();
         }
     }
 
@@ -129,8 +128,8 @@ void SynapseRos::actuators_callback(const actuator_msgs::msg::Actuators& msg) co
 
     // header
     syn_msg.mutable_header()->set_frame_id(msg.header.frame_id);
-    syn_msg.mutable_header()->mutable_stamp()->set_seconds(msg.header.stamp.sec);
-    syn_msg.mutable_header()->mutable_stamp()->set_nanos(msg.header.stamp.nanosec);
+    syn_msg.mutable_header()->mutable_stamp()->set_sec(msg.header.stamp.sec);
+    syn_msg.mutable_header()->mutable_stamp()->set_nanosec(msg.header.stamp.nanosec);
 
     // actuators
     for (auto i = 0u; i < msg.position.size(); ++i) {
@@ -159,8 +158,8 @@ void SynapseRos::bezier_trajectory_callback(const synapse_msgs::msg::BezierTraje
 
     // header
     syn_msg.mutable_header()->set_frame_id(msg.header.frame_id);
-    syn_msg.mutable_header()->mutable_stamp()->set_seconds(msg.header.stamp.sec);
-    syn_msg.mutable_header()->mutable_stamp()->set_nanos(msg.header.stamp.nanosec);
+    syn_msg.mutable_header()->mutable_stamp()->set_sec(msg.header.stamp.sec);
+    syn_msg.mutable_header()->mutable_stamp()->set_nanosec(msg.header.stamp.nanosec);
     syn_msg.add_curves();
 
     for (auto i = 0u; i < msg.curves.size(); ++i) {
@@ -237,8 +236,8 @@ void SynapseRos::odom_callback(const nav_msgs::msg::Odometry& msg) const
 
     // header
     syn_msg.mutable_header()->set_frame_id(msg.header.frame_id);
-    syn_msg.mutable_header()->mutable_stamp()->set_seconds(msg.header.stamp.sec);
-    syn_msg.mutable_header()->mutable_stamp()->set_nanos(msg.header.stamp.nanosec);
+    syn_msg.mutable_header()->mutable_stamp()->set_sec(msg.header.stamp.sec);
+    syn_msg.mutable_header()->mutable_stamp()->set_nanosec(msg.header.stamp.nanosec);
 
     // pose
     syn_msg.mutable_pose()->mutable_pose()->mutable_position()->set_x(msg.pose.pose.position.x);
