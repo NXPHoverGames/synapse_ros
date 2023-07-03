@@ -37,7 +37,7 @@ SynapseRos::SynapseRos()
         "in/joy", 10, std::bind(&SynapseRos::joy_callback, this, _1));
 
     sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>(
-        "in/odometry", 10, std::bind(&SynapseRos::odom_callback, this, _1));
+        "in/odometry", 10, std::bind(&SynapseRos::odometry_callback, this, _1));
 
     // publications cerebri -> ros
     pub_actuators_ = this->create_publisher<actuator_msgs::msg::Actuators>("out/actuators", 10);
@@ -226,7 +226,7 @@ void SynapseRos::joy_callback(const sensor_msgs::msg::Joy& msg) const
     tf_send(SYNAPSE_IN_JOY_TOPIC, data);
 }
 
-void SynapseRos::odom_callback(const nav_msgs::msg::Odometry& msg) const
+void SynapseRos::odometry_callback(const nav_msgs::msg::Odometry& msg) const
 {
     // construct empty syn_msg
     synapse::msgs::Odometry syn_msg {};

@@ -13,6 +13,7 @@
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
 #include <boost/system/error_code.hpp>
 #include <memory>
+#include <nav_msgs/msg/detail/odometry__struct.hpp>
 
 using std::placeholders::_1;
 using std::placeholders::_2;
@@ -75,6 +76,7 @@ TcpClient::TcpClient(std::string host, int port, const std::shared_ptr<TinyFrame
     TF_AddGenericListener(tf_.get(), TcpClient::genericListener);
     TF_AddTypeListener(tf_.get(), SYNAPSE_OUT_CMD_VEL_TOPIC, TcpClient::out_cmd_vel_Listener);
     TF_AddTypeListener(tf_.get(), SYNAPSE_OUT_ACTUATORS_TOPIC, TcpClient::actuatorsListener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_OUT_ODOMETRY_TOPIC, TcpClient::odometryListener);
     timer_.async_wait(std::bind(&TcpClient::tick, this, _1));
 }
 
@@ -161,6 +163,37 @@ TF_Result TcpClient::actuatorsListener(TinyFrame* tf, TF_Msg* frame)
     TcpClient* tcp_client = (TcpClient*)tf->userdata;
     if (tcp_client->ros_ != NULL) {
         tcp_client->ros_->publish_actuators(msg);
+    }
+    return TF_STAY;
+}
+
+TF_Result TcpClient::odometryListener(TinyFrame* tf, TF_Msg* frame)
+{
+    // parse protobuf message
+    synapse::msgs::Odometry syn_msg;
+    if (!syn_msg.ParseFromArray(frame->data, frame->len)) {
+        std::cerr << "Failed to parse odometry" << std::endl;
+        return TF_STAY;
+    }
+
+    // build ros msg
+    nav_msgs::msg::Odometry msg;
+    msg.header.frame_id = syn_msg.header().frame_id();
+    msg.header.stamp.sec = syn_msg.header().stamp().sec();
+    msg.header.stamp.nanosec = syn_msg.header().stamp().nanosec();
+    msg.child_frame_id = syn_msg.child_frame_id();
+    msg.pose.pose.position.x = syn_msg.pose().pose().position().x();
+    msg.pose.pose.position.y = syn_msg.pose().pose().position().y();
+    msg.pose.pose.position.z = syn_msg.pose().pose().position().z();
+    msg.pose.pose.orientation.w = syn_msg.pose().pose().orientation().w();
+    msg.pose.pose.orientation.x = syn_msg.pose().pose().orientation().x();
+    msg.pose.pose.orientation.y = syn_msg.pose().pose().orientation().y();
+    msg.pose.pose.orientation.z = syn_msg.pose().pose().orientation().z();
+
+    // send to ros
+    TcpClient* tcp_client = (TcpClient*)tf->userdata;
+    if (tcp_client->ros_ != NULL) {
+        tcp_client->ros_->publish_odometry(syn_msg);
     }
     return TF_STAY;
 }

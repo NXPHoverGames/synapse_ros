@@ -39,6 +39,7 @@ private:
     void tx_handler(const boost::system::error_code& error, std::size_t bytes_transferred);
     void rx_handler(const boost::system::error_code& error, std::size_t bytes_transferred);
     void send_frame(TF_Msg* msg);
+    static TF_Result odometryListener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result actuatorsListener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result out_cmd_vel_Listener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result genericListener(TinyFrame* tf, TF_Msg* msg);

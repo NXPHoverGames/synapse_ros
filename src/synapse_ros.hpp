@@ -51,7 +51,7 @@ private:
     void joy_callback(const sensor_msgs::msg::Joy& msg) const;
 
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_;
-    void odom_callback(const nav_msgs::msg::Odometry& msg) const;
+    void odometry_callback(const nav_msgs::msg::Odometry& msg) const;
 
     // publications cerebri -> ros
     rclcpp::Publisher<actuator_msgs::msg::Actuators>::SharedPtr pub_actuators_;
