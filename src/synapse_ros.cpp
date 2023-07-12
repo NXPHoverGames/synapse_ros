@@ -160,25 +160,26 @@ void SynapseRos::bezier_trajectory_callback(const synapse_msgs::msg::BezierTraje
     syn_msg.mutable_header()->set_frame_id(msg.header.frame_id);
     syn_msg.mutable_header()->mutable_stamp()->set_sec(msg.header.stamp.sec);
     syn_msg.mutable_header()->mutable_stamp()->set_nanosec(msg.header.stamp.nanosec);
-    syn_msg.add_curves();
 
     for (auto i = 0u; i < msg.curves.size(); ++i) {
-        syn_msg.mutable_curves(i)->set_time_stop(msg.curves[i].time_stop);
+        synapse::msgs::BezierCurve * curve = syn_msg.add_curves();
+
+        curve->set_time_stop(msg.curves[i].time_stop);
 
         for (auto j = 0u; j < msg.curves[i].x.size(); ++j) {
-            syn_msg.mutable_curves(i)->add_x(msg.curves[i].x[j]);
+            curve->add_x(msg.curves[i].x[j]);
         }
 
         for (auto j = 0u; j < msg.curves[i].y.size(); ++j) {
-            syn_msg.mutable_curves(i)->add_y(msg.curves[i].y[j]);
+            curve->add_y(msg.curves[i].y[j]);
         }
 
         for (auto j = 0u; j < msg.curves[i].z.size(); ++j) {
-            syn_msg.mutable_curves(i)->add_z(msg.curves[i].z[j]);
+            curve->add_z(msg.curves[i].z[j]);
         }
 
         for (auto j = 0u; j < msg.curves[i].yaw.size(); ++j) {
-            syn_msg.mutable_curves(i)->add_yaw(msg.curves[i].yaw[j]);
+            curve->add_yaw(msg.curves[i].yaw[j]);
         }
     }
 
