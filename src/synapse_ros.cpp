@@ -7,11 +7,9 @@ std::shared_ptr<TcpClient> g_tcp_client { NULL };
 
 void tcp_entry_point()
 {
-    std::cout << "tcp thread started" << std::endl;
     while (rclcpp::ok()) {
         g_tcp_client->run_for(std::chrono::seconds(1));
     }
-    std::cout << "tcp thread stopped" << std::endl;
 }
 
 SynapseRos::SynapseRos()
@@ -44,8 +42,6 @@ SynapseRos::SynapseRos()
     pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("out/odometry", 10);
 
     // create tcp client
-    std::cout << "creating tcp client\n"
-              << std::endl;
     g_tcp_client = std::make_shared<TcpClient>(host, port, tf_);
     g_tcp_client.get()->ros_ = this;
     tcp_thread_ = std::make_shared<std::thread>(tcp_entry_point);

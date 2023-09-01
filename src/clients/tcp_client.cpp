@@ -32,7 +32,6 @@ TcpClient::TcpClient(std::string host, int port, const std::shared_ptr<TinyFrame
     , port_(port)
 {
     // Set socket options
-    std::cout << "creating option" << std::endl;
     sockfd_.open(boost::asio::ip::tcp::v4());
     if (!sockfd_.is_open()) {
         std::cerr << "failed to open socket" << std::endl;
@@ -73,10 +72,10 @@ TcpClient::TcpClient(std::string host, int port, const std::shared_ptr<TinyFrame
     tf_->usertag = 0;
     tf_->userdata = this;
     tf_->write = write_tcp;
-    TF_AddGenericListener(tf_.get(), TcpClient::genericListener);
-    TF_AddTypeListener(tf_.get(), SYNAPSE_OUT_CMD_VEL_TOPIC, TcpClient::out_cmd_vel_Listener);
-    TF_AddTypeListener(tf_.get(), SYNAPSE_OUT_ACTUATORS_TOPIC, TcpClient::actuatorsListener);
-    TF_AddTypeListener(tf_.get(), SYNAPSE_OUT_ODOMETRY_TOPIC, TcpClient::odometryListener);
+    TF_AddGenericListener(tf_.get(), TcpClient::generic_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_OUT_CMD_VEL_TOPIC, TcpClient::out_cmd_vel_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_OUT_ACTUATORS_TOPIC, TcpClient::actuators_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_OUT_ODOMETRY_TOPIC, TcpClient::odometry_listener);
     timer_.async_wait(std::bind(&TcpClient::tick, this, _1));
 }
 
@@ -86,7 +85,7 @@ void TcpClient::handle_connect(
 {
     if (ec.failed()) {
         connected_ = false;
-        std::cerr << "failed to connect: " << ec.message() << std::endl;
+        //std::cerr << "failed to connect: " << ec.message() << std::endl;
         if (sockfd_.is_open()) {
             sockfd_.close();
         }
@@ -102,7 +101,6 @@ void TcpClient::tick(const boost::system::error_code& /*e*/)
         sockfd_.async_receive(boost::asio::buffer(rx_buf_, rx_buf_length_),
             std::bind(&TcpClient::rx_handler, this, _1, _2));
     } else {
-        std::cout << "tcp connecting to: " << host_ << ":" << port_ << std::endl;
         boost::asio::async_connect(
             sockfd_,
             resolver_.resolve(host_, std::to_string(port_)),
@@ -110,12 +108,7 @@ void TcpClient::tick(const boost::system::error_code& /*e*/)
     }
 
     boost::posix_time::time_duration wait;
-    if (connected_) {
-        wait = boost::posix_time::milliseconds(100);
-    } else {
-        wait = boost::posix_time::seconds(1);
-    }
-
+    wait = boost::posix_time::milliseconds(100);
     timer_.expires_at(timer_.expires_at() + wait);
     timer_.async_wait(std::bind(&TcpClient::tick, this, _1));
 }
@@ -150,7 +143,7 @@ void TcpClient::rx_handler(const boost::system::error_code& ec, std::size_t byte
     }
 }
 
-TF_Result TcpClient::actuatorsListener(TinyFrame* tf, TF_Msg* frame)
+TF_Result TcpClient::actuators_listener(TinyFrame* tf, TF_Msg* frame)
 {
     // parse protobuf message
     synapse::msgs::Actuators msg;
@@ -167,7 +160,7 @@ TF_Result TcpClient::actuatorsListener(TinyFrame* tf, TF_Msg* frame)
     return TF_STAY;
 }
 
-TF_Result TcpClient::odometryListener(TinyFrame* tf, TF_Msg* frame)
+TF_Result TcpClient::odometry_listener(TinyFrame* tf, TF_Msg* frame)
 {
     // parse protobuf message
     synapse::msgs::Odometry syn_msg;
@@ -198,7 +191,7 @@ TF_Result TcpClient::odometryListener(TinyFrame* tf, TF_Msg* frame)
     return TF_STAY;
 }
 
-TF_Result TcpClient::out_cmd_vel_Listener(TinyFrame* tf, TF_Msg* frame)
+TF_Result TcpClient::out_cmd_vel_listener(TinyFrame* tf, TF_Msg* frame)
 {
     (void)tf;
     synapse::msgs::Twist msg;
@@ -206,19 +199,11 @@ TF_Result TcpClient::out_cmd_vel_Listener(TinyFrame* tf, TF_Msg* frame)
         std::cerr << "Failed to out_cmd_vel" << std::endl;
         return TF_STAY;
     } else {
-        std::cout << "out cmd vel"
-                  << msg.linear().x()
-                  << msg.linear().y()
-                  << msg.linear().z()
-                  << msg.angular().x()
-                  << msg.angular().y()
-                  << msg.angular().z()
-                  << std::endl;
     }
     return TF_STAY;
 }
 
-TF_Result TcpClient::genericListener(TinyFrame* tf, TF_Msg* msg)
+TF_Result TcpClient::generic_listener(TinyFrame* tf, TF_Msg* msg)
 {
     (void)tf;
     int type = msg->type;
