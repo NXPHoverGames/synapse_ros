@@ -38,6 +38,12 @@ TcpClient::TcpClient(std::string host, int port, const std::shared_ptr<TinyFrame
     }
 
     try {
+        sockfd_.set_option(boost::asio::detail::socket_option::integer<SOL_SOCKET, SO_REUSEADDR> { 1 });
+    } catch (std::exception& e) {
+        std::cerr << e.what() << "failed to set reuseaddr" << std::endl;
+    }
+
+    try {
         sockfd_.set_option(boost::asio::detail::socket_option::integer<SOL_SOCKET, SO_KEEPALIVE> { 1 });
     } catch (std::exception& e) {
         std::cerr << e.what() << "failed to set keep alive" << std::endl;
