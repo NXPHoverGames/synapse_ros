@@ -6,6 +6,7 @@
 #include "synapse_tinyframe/TinyFrame.h"
 #include <memory>
 #include <rclcpp/subscription_options.hpp>
+#include <synapse_msgs/msg/detail/led_array__struct.hpp>
 
 #include "actuator_msgs/msg/actuators.hpp"
 #include "synapse_protobuf/actuators.pb.h"
@@ -18,6 +19,9 @@
 
 #include "synapse_msgs/msg/bezier_trajectory.hpp"
 #include "synapse_protobuf/bezier_trajectory.pb.h"
+
+#include "synapse_msgs/msg/led_array.hpp"
+#include "synapse_protobuf/led_array.pb.h"
 
 #include "geometry_msgs/msg/twist.hpp"
 #include "synapse_protobuf/twist.pb.h"
@@ -52,6 +56,9 @@ private:
 
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_;
     void odometry_callback(const nav_msgs::msg::Odometry& msg) const;
+
+    rclcpp::Subscription<synapse_msgs::msg::LEDArray>::SharedPtr sub_led_array_;
+    void led_array_callback(const synapse_msgs::msg::LEDArray& msg) const;
 
     // publications cerebri -> ros
     rclcpp::Publisher<actuator_msgs::msg::Actuators>::SharedPtr pub_actuators_;

@@ -1,5 +1,7 @@
 #include "synapse_ros.hpp"
 #include "clients/tcp_client.hpp"
+#include <synapse_msgs/msg/detail/led_array__struct.hpp>
+#include <synapse_protobuf/led.pb.h>
 #include <synapse_tinyframe/SynapseTopics.h>
 
 using std::placeholders::_1;
@@ -36,6 +38,9 @@ SynapseRos::SynapseRos()
 
     sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>(
         "in/odometry", 10, std::bind(&SynapseRos::odometry_callback, this, _1));
+
+    sub_led_array_ = this->create_subscription<synapse_msgs::msg::LEDArray>(
+        "in/led_array", 10, std::bind(&SynapseRos::led_array_callback, this, _1));
 
     // publications cerebri -> ros
     pub_actuators_ = this->create_publisher<actuator_msgs::msg::Actuators>("out/actuators", 10);
@@ -261,6 +266,34 @@ void SynapseRos::odometry_callback(const nav_msgs::msg::Odometry& msg) const
     }
     tf_send(SYNAPSE_IN_ODOMETRY_TOPIC, data);
 }
+
+void SynapseRos::led_array_callback(const synapse_msgs::msg::LEDArray& msg) const
+{
+    // construct empty syn_msg
+    synapse::msgs::LEDArray syn_msg {};
+
+    // header
+    syn_msg.mutable_header()->set_frame_id(msg.header.frame_id);
+    syn_msg.mutable_header()->mutable_stamp()->set_sec(msg.header.stamp.sec);
+    syn_msg.mutable_header()->mutable_stamp()->set_nanosec(msg.header.stamp.nanosec);
+
+    // leds
+    for (auto i = 0u; i < msg.led.size(); ++i) {
+        synapse::msgs::LED * led = syn_msg.add_led();
+        led->set_index(msg.led[i].index);
+        led->set_b(msg.led[i].b);
+        led->set_g(msg.led[i].g);
+        led->set_r(msg.led[i].r);
+    }
+
+    std::string data;
+    if (!syn_msg.SerializeToString(&data)) {
+        std::cerr << "Failed to serialize LEDArray" << std::endl;
+    }
+    tf_send(SYNAPSE_IN_LED_ARRAY_TOPIC, data);
+}
+
+
 
 void SynapseRos::tf_send(int topic, const std::string& data) const
 {
