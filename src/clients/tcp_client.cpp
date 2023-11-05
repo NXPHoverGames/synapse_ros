@@ -7,13 +7,11 @@
 #include "synapse_protobuf/twist.pb.h"
 
 #include "synapse_tinyframe/SynapseTopics.h"
-#include <boost/asio/detail/socket_option.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/date_time/posix_time/posix_time_config.hpp>
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
 #include <boost/system/error_code.hpp>
 #include <memory>
-#include <nav_msgs/msg/detail/odometry__struct.hpp>
 
 using std::placeholders::_1;
 using std::placeholders::_2;
@@ -27,7 +25,7 @@ static void write_tcp(TinyFrame* tf, const uint8_t* buf, uint32_t len)
     tcp_client->write(buf, len);
 }
 
-TcpClient::TcpClient(std::string host, int port, const std::shared_ptr<TinyFrame>& tf)
+TcpClient::TcpClient(std::string host, int port)
     : host_(host)
     , port_(port)
 {
@@ -74,7 +72,7 @@ TcpClient::TcpClient(std::string host, int port, const std::shared_ptr<TinyFrame
     }
 
     // Set up the TinyFrame library
-    tf_ = tf;
+    tf_ = std::make_shared<TinyFrame>(*TF_Init(TF_MASTER, write_tcp));
     tf_->usertag = 0;
     tf_->userdata = this;
     tf_->write = write_tcp;
@@ -91,7 +89,6 @@ void TcpClient::handle_connect(
 {
     if (ec.failed()) {
         connected_ = false;
-        //std::cerr << "failed to connect: " << ec.message() << std::endl;
         if (sockfd_.is_open()) {
             sockfd_.close();
         }
@@ -151,15 +148,17 @@ void TcpClient::rx_handler(const boost::system::error_code& ec, std::size_t byte
 
 TF_Result TcpClient::actuators_listener(TinyFrame* tf, TF_Msg* frame)
 {
-    // parse protobuf message
     synapse::msgs::Actuators msg;
+
+    // get tcp client attached to tf pointer in userdata
+    TcpClient* tcp_client = (TcpClient*)tf->userdata;
+
     if (!msg.ParseFromArray(frame->data, frame->len)) {
         std::cerr << "Failed to parse actuators" << std::endl;
         return TF_STAY;
     }
 
     // send to ros
-    TcpClient* tcp_client = (TcpClient*)tf->userdata;
     if (tcp_client->ros_ != NULL) {
         tcp_client->ros_->publish_actuators(msg);
     }

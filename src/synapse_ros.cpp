@@ -47,8 +47,9 @@ SynapseRos::SynapseRos()
     pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("out/odometry", 10);
 
     // create tcp client
-    g_tcp_client = std::make_shared<TcpClient>(host, port, tf_);
+    g_tcp_client = std::make_shared<TcpClient>(host, port);
     g_tcp_client.get()->ros_ = this;
+    tf_ = g_tcp_client.get()->tf_;
     tcp_thread_ = std::make_shared<std::thread>(tcp_entry_point);
 }
 
@@ -163,7 +164,7 @@ void SynapseRos::bezier_trajectory_callback(const synapse_msgs::msg::BezierTraje
     syn_msg.mutable_header()->mutable_stamp()->set_nanosec(msg.header.stamp.nanosec);
 
     for (auto i = 0u; i < msg.curves.size(); ++i) {
-        synapse::msgs::BezierCurve * curve = syn_msg.add_curves();
+        synapse::msgs::BezierCurve* curve = syn_msg.add_curves();
 
         curve->set_time_stop(msg.curves[i].time_stop);
 
@@ -279,7 +280,7 @@ void SynapseRos::led_array_callback(const synapse_msgs::msg::LEDArray& msg) cons
 
     // leds
     for (auto i = 0u; i < msg.led.size(); ++i) {
-        synapse::msgs::LED * led = syn_msg.add_led();
+        synapse::msgs::LED* led = syn_msg.add_led();
         led->set_index(msg.led[i].index);
         led->set_b(msg.led[i].b);
         led->set_g(msg.led[i].g);
@@ -292,8 +293,6 @@ void SynapseRos::led_array_callback(const synapse_msgs::msg::LEDArray& msg) cons
     }
     tf_send(SYNAPSE_IN_LED_ARRAY_TOPIC, data);
 }
-
-
 
 void SynapseRos::tf_send(int topic, const std::string& data) const
 {

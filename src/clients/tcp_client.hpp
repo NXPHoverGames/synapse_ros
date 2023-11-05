@@ -20,14 +20,14 @@ private:
     boost::asio::deadline_timer timer_ { io_context_, boost::posix_time::seconds(0) };
     boost::asio::ip::tcp::socket sockfd_ { boost::asio::ip::tcp::socket(io_context_) };
     boost::asio::ip::tcp::resolver resolver_ { io_context_ };
-    std::shared_ptr<TinyFrame> tf_ { TF_Init(TF_MASTER) };
     std::string host_;
     int port_;
     bool connected_ { false };
 
 public:
+    std::shared_ptr<TinyFrame> tf_ {};
     SynapseRos* ros_ { NULL };
-    TcpClient(std::string host, int port, const std::shared_ptr<TinyFrame>& tf);
+    TcpClient(std::string host, int port);
     void run_for(std::chrono::seconds sec);
     void write(const uint8_t* buf, uint32_t len);
 

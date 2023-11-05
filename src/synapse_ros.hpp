@@ -39,7 +39,7 @@ public:
     void publish_odometry(const synapse::msgs::Odometry& msg);
 
 private:
-    std::shared_ptr<TinyFrame> tf_ { TF_Init(TF_MASTER) };
+    std::shared_ptr<TinyFrame> tf_ {};
 
     // subscriptions ros -> cerebri
     rclcpp::Subscription<actuator_msgs::msg::Actuators>::SharedPtr sub_actuators_;
