@@ -149,7 +149,7 @@ void SynapseRos::actuators_callback(const actuator_msgs::msg::Actuators& msg) co
     if (!syn_msg.SerializeToString(&data)) {
         std::cerr << "Failed to serialize Actuators" << std::endl;
     }
-    tf_send(SYNAPSE_IN_ACTUATORS_TOPIC, data);
+    tf_send(SYNAPSE_ACTUATORS_TOPIC, data);
 }
 
 void SynapseRos::bezier_trajectory_callback(const synapse_msgs::msg::BezierTrajectory& msg) const
@@ -189,7 +189,7 @@ void SynapseRos::bezier_trajectory_callback(const synapse_msgs::msg::BezierTraje
     if (!syn_msg.SerializeToString(&data)) {
         std::cerr << "Failed to serialize BezierTrajectory" << std::endl;
     }
-    tf_send(SYNAPSE_IN_BEZIER_TRAJECTORY_TOPIC, data);
+    tf_send(SYNAPSE_BEZIER_TRAJECTORY_TOPIC, data);
 }
 
 void SynapseRos::cmd_vel_callback(const geometry_msgs::msg::Twist& msg) const
@@ -208,7 +208,7 @@ void SynapseRos::cmd_vel_callback(const geometry_msgs::msg::Twist& msg) const
     if (!syn_msg.SerializeToString(&data)) {
         std::cerr << "Failed to serialize Twist" << std::endl;
     }
-    tf_send(SYNAPSE_IN_CMD_VEL_TOPIC, data);
+    tf_send(SYNAPSE_CMD_VEL_TOPIC, data);
 }
 
 void SynapseRos::joy_callback(const sensor_msgs::msg::Joy& msg) const
@@ -226,7 +226,7 @@ void SynapseRos::joy_callback(const sensor_msgs::msg::Joy& msg) const
     if (!syn_msg.SerializeToString(&data)) {
         std::cerr << "Failed to serialize Joy" << std::endl;
     }
-    tf_send(SYNAPSE_IN_JOY_TOPIC, data);
+    tf_send(SYNAPSE_JOY_TOPIC, data);
 }
 
 void SynapseRos::odometry_callback(const nav_msgs::msg::Odometry& msg) const
@@ -265,7 +265,7 @@ void SynapseRos::odometry_callback(const nav_msgs::msg::Odometry& msg) const
     if (!syn_msg.SerializeToString(&data)) {
         std::cerr << "Failed to serialize Odometry" << std::endl;
     }
-    tf_send(SYNAPSE_IN_ODOMETRY_TOPIC, data);
+    tf_send(SYNAPSE_ODOMETRY_TOPIC, data);
 }
 
 void SynapseRos::led_array_callback(const synapse_msgs::msg::LEDArray& msg) const
@@ -291,7 +291,7 @@ void SynapseRos::led_array_callback(const synapse_msgs::msg::LEDArray& msg) cons
     if (!syn_msg.SerializeToString(&data)) {
         std::cerr << "Failed to serialize LEDArray" << std::endl;
     }
-    tf_send(SYNAPSE_IN_LED_ARRAY_TOPIC, data);
+    tf_send(SYNAPSE_LED_ARRAY_TOPIC, data);
 }
 
 void SynapseRos::tf_send(int topic, const std::string& data) const

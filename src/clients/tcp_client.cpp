@@ -77,9 +77,9 @@ TcpClient::TcpClient(std::string host, int port)
     tf_->userdata = this;
     tf_->write = write_tcp;
     TF_AddGenericListener(tf_.get(), TcpClient::generic_listener);
-    TF_AddTypeListener(tf_.get(), SYNAPSE_OUT_CMD_VEL_TOPIC, TcpClient::out_cmd_vel_listener);
-    TF_AddTypeListener(tf_.get(), SYNAPSE_OUT_ACTUATORS_TOPIC, TcpClient::actuators_listener);
-    TF_AddTypeListener(tf_.get(), SYNAPSE_OUT_ODOMETRY_TOPIC, TcpClient::odometry_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_CMD_VEL_TOPIC, TcpClient::out_cmd_vel_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_ACTUATORS_TOPIC, TcpClient::actuators_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_ODOMETRY_TOPIC, TcpClient::odometry_listener);
     timer_.async_wait(std::bind(&TcpClient::tick, this, _1));
 }
 
