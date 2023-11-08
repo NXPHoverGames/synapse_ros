@@ -23,6 +23,15 @@
 #include "synapse_msgs/msg/led_array.hpp"
 #include "synapse_protobuf/led_array.pb.h"
 
+#include "synapse_msgs/msg/fsm.hpp"
+#include "synapse_protobuf/fsm.pb.h"
+
+#include "sensor_msgs/msg/battery_state.hpp"
+#include "synapse_protobuf/battery_state.pb.h"
+
+#include "synapse_msgs/msg/safety.hpp"
+#include "synapse_protobuf/safety.pb.h"
+
 #include "geometry_msgs/msg/twist.hpp"
 #include "synapse_protobuf/twist.pb.h"
 
@@ -37,6 +46,9 @@ public:
     void tf_send(int topic, const std::string& data) const;
     void publish_actuators(const synapse::msgs::Actuators& msg);
     void publish_odometry(const synapse::msgs::Odometry& msg);
+    void publish_battery_state(const synapse::msgs::BatteryState& msg);
+    void publish_fsm(const synapse::msgs::Fsm& msg);
+    void publish_safety(const synapse::msgs::Safety& msg);
 
 private:
     std::shared_ptr<TinyFrame> tf_ {};
@@ -63,6 +75,9 @@ private:
     // publications cerebri -> ros
     rclcpp::Publisher<actuator_msgs::msg::Actuators>::SharedPtr pub_actuators_;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odometry_;
+    rclcpp::Publisher<sensor_msgs::msg::BatteryState>::SharedPtr pub_battery_state_;
+    rclcpp::Publisher<synapse_msgs::msg::FSM>::SharedPtr pub_fsm_;
+    rclcpp::Publisher<synapse_msgs::msg::Safety>::SharedPtr pub_safety_;
 
     // callbacks
     std::shared_ptr<std::thread> tcp_thread_;

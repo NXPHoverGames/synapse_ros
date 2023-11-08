@@ -1,7 +1,9 @@
 #include "synapse_ros.hpp"
 #include "clients/tcp_client.hpp"
 #include <synapse_msgs/msg/detail/led_array__struct.hpp>
+#include <synapse_msgs/msg/detail/safety__struct.hpp>
 #include <synapse_protobuf/led.pb.h>
+#include <synapse_protobuf/safety.pb.h>
 #include <synapse_tinyframe/SynapseTopics.h>
 
 using std::placeholders::_1;
@@ -45,6 +47,9 @@ SynapseRos::SynapseRos()
     // publications cerebri -> ros
     pub_actuators_ = this->create_publisher<actuator_msgs::msg::Actuators>("out/actuators", 10);
     pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("out/odometry", 10);
+    pub_battery_state_ = this->create_publisher<sensor_msgs::msg::BatteryState>("out/battery_state", 10);
+    pub_fsm_ = this->create_publisher<synapse_msgs::msg::FSM>("out/fsm", 10);
+    pub_safety_ = this->create_publisher<synapse_msgs::msg::Safety>("out/safety", 10);
 
     // create tcp client
     g_tcp_client = std::make_shared<TcpClient>(host, port);
@@ -122,6 +127,60 @@ void SynapseRos::publish_odometry(const synapse::msgs::Odometry& msg)
     ros_msg.twist.twist.angular.z = msg.twist().twist().angular().z();
 
     pub_odometry_->publish(ros_msg);
+}
+
+void SynapseRos::publish_battery_state(const synapse::msgs::BatteryState& msg)
+{
+    sensor_msgs::msg::BatteryState ros_msg;
+
+    // header
+    if (msg.has_header()) {
+        ros_msg.header.frame_id = msg.header().frame_id();
+        if (msg.header().has_stamp()) {
+            ros_msg.header.stamp.sec = msg.header().stamp().sec();
+            ros_msg.header.stamp.nanosec = msg.header().stamp().nanosec();
+        }
+    }
+
+    ros_msg.voltage = msg.voltage();
+    pub_battery_state_->publish(ros_msg);
+}
+
+void SynapseRos::publish_fsm(const synapse::msgs::Fsm& msg)
+{
+    synapse_msgs::msg::FSM ros_msg;
+
+    // header
+    if (msg.has_header()) {
+        ros_msg.header.frame_id = msg.header().frame_id();
+        if (msg.header().has_stamp()) {
+            ros_msg.header.stamp.sec = msg.header().stamp().sec();
+            ros_msg.header.stamp.nanosec = msg.header().stamp().nanosec();
+        }
+    }
+
+    ros_msg.mode = msg.mode();
+    ros_msg.armed = msg.armed();
+
+    pub_fsm_->publish(ros_msg);
+}
+
+void SynapseRos::publish_safety(const synapse::msgs::Safety& msg)
+{
+    synapse_msgs::msg::Safety ros_msg;
+
+    // header
+    if (msg.has_header()) {
+        ros_msg.header.frame_id = msg.header().frame_id();
+        if (msg.header().has_stamp()) {
+            ros_msg.header.stamp.sec = msg.header().stamp().sec();
+            ros_msg.header.stamp.nanosec = msg.header().stamp().nanosec();
+        }
+    }
+
+    ros_msg.status = msg.status();
+
+    pub_safety_->publish(ros_msg);
 }
 
 void SynapseRos::actuators_callback(const actuator_msgs::msg::Actuators& msg) const

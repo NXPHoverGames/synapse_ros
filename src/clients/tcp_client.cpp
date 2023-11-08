@@ -80,6 +80,9 @@ TcpClient::TcpClient(std::string host, int port)
     TF_AddTypeListener(tf_.get(), SYNAPSE_CMD_VEL_TOPIC, TcpClient::out_cmd_vel_listener);
     TF_AddTypeListener(tf_.get(), SYNAPSE_ACTUATORS_TOPIC, TcpClient::actuators_listener);
     TF_AddTypeListener(tf_.get(), SYNAPSE_ODOMETRY_TOPIC, TcpClient::odometry_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_BATTERY_STATE_TOPIC, TcpClient::battery_state_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_FSM_TOPIC, TcpClient::fsm_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_SAFETY_TOPIC, TcpClient::safety_listener);
     timer_.async_wait(std::bind(&TcpClient::tick, this, _1));
 }
 
@@ -174,24 +177,61 @@ TF_Result TcpClient::odometry_listener(TinyFrame* tf, TF_Msg* frame)
         return TF_STAY;
     }
 
-    // build ros msg
-    nav_msgs::msg::Odometry msg;
-    msg.header.frame_id = syn_msg.header().frame_id();
-    msg.header.stamp.sec = syn_msg.header().stamp().sec();
-    msg.header.stamp.nanosec = syn_msg.header().stamp().nanosec();
-    msg.child_frame_id = syn_msg.child_frame_id();
-    msg.pose.pose.position.x = syn_msg.pose().pose().position().x();
-    msg.pose.pose.position.y = syn_msg.pose().pose().position().y();
-    msg.pose.pose.position.z = syn_msg.pose().pose().position().z();
-    msg.pose.pose.orientation.w = syn_msg.pose().pose().orientation().w();
-    msg.pose.pose.orientation.x = syn_msg.pose().pose().orientation().x();
-    msg.pose.pose.orientation.y = syn_msg.pose().pose().orientation().y();
-    msg.pose.pose.orientation.z = syn_msg.pose().pose().orientation().z();
-
     // send to ros
     TcpClient* tcp_client = (TcpClient*)tf->userdata;
     if (tcp_client->ros_ != NULL) {
         tcp_client->ros_->publish_odometry(syn_msg);
+    }
+    return TF_STAY;
+}
+
+TF_Result TcpClient::battery_state_listener(TinyFrame* tf, TF_Msg* frame)
+{
+    // parse protobuf message
+    synapse::msgs::BatteryState syn_msg;
+    if (!syn_msg.ParseFromArray(frame->data, frame->len)) {
+        std::cerr << "Failed to parse battery state" << std::endl;
+        return TF_STAY;
+    }
+
+    // send to ros
+    TcpClient* tcp_client = (TcpClient*)tf->userdata;
+    if (tcp_client->ros_ != NULL) {
+        tcp_client->ros_->publish_battery_state(syn_msg);
+    }
+    return TF_STAY;
+}
+
+TF_Result TcpClient::fsm_listener(TinyFrame* tf, TF_Msg* frame)
+{
+    // parse protobuf message
+    synapse::msgs::Fsm syn_msg;
+    if (!syn_msg.ParseFromArray(frame->data, frame->len)) {
+        std::cerr << "Failed to parse fsm" << std::endl;
+        return TF_STAY;
+    }
+
+    // send to ros
+    TcpClient* tcp_client = (TcpClient*)tf->userdata;
+    if (tcp_client->ros_ != NULL) {
+        tcp_client->ros_->publish_fsm(syn_msg);
+    }
+    return TF_STAY;
+}
+
+TF_Result TcpClient::safety_listener(TinyFrame* tf, TF_Msg* frame)
+{
+    // parse protobuf message
+    synapse::msgs::Safety syn_msg;
+    if (!syn_msg.ParseFromArray(frame->data, frame->len)) {
+        std::cerr << "Failed to parse fsm" << std::endl;
+        return TF_STAY;
+    }
+
+    // send to ros
+    TcpClient* tcp_client = (TcpClient*)tf->userdata;
+    if (tcp_client->ros_ != NULL) {
+        tcp_client->ros_->publish_safety(syn_msg);
     }
     return TF_STAY;
 }
