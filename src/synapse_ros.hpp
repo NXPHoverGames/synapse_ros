@@ -57,7 +57,9 @@ public:
 
 private:
     std::shared_ptr<TinyFrame> tf_ {};
-    builtin_interfaces::msg::Time ros_clock_offset_;
+    builtin_interfaces::msg::Time ros_clock_offset_ {};
+
+    std_msgs::msg::Header compute_header(const synapse::msgs::Header& msg);
 
     // subscriptions ros -> cerebri
     rclcpp::Subscription<actuator_msgs::msg::Actuators>::SharedPtr sub_actuators_;

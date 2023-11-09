@@ -1,7 +1,9 @@
 #include "synapse_ros.hpp"
 #include "clients/tcp_client.hpp"
+#include <std_msgs/msg/detail/header__struct.hpp>
 #include <synapse_msgs/msg/detail/led_array__struct.hpp>
 #include <synapse_msgs/msg/detail/safety__struct.hpp>
+#include <synapse_protobuf/header.pb.h>
 #include <synapse_protobuf/led.pb.h>
 #include <synapse_protobuf/safety.pb.h>
 #include <synapse_tinyframe/SynapseTopics.h>
@@ -66,17 +68,24 @@ SynapseRos::~SynapseRos()
     tcp_thread_->join();
 }
 
+std_msgs::msg::Header SynapseRos::compute_header(const synapse::msgs::Header& msg)
+{
+    std_msgs::msg::Header ros_msg;
+    ros_msg.frame_id = msg.frame_id();
+    if (msg.has_stamp()) {
+        ros_msg.stamp.sec = msg.stamp().sec() + ros_clock_offset_.sec;
+        ros_msg.stamp.nanosec = msg.stamp().nanosec() + ros_clock_offset_.nanosec;
+    }
+    return ros_msg;
+}
+
 void SynapseRos::publish_actuators(const synapse::msgs::Actuators& msg)
 {
     actuator_msgs::msg::Actuators ros_msg;
 
     // header
     if (msg.has_header()) {
-        ros_msg.header.frame_id = msg.header().frame_id();
-        if (msg.header().has_stamp()) {
-            ros_msg.header.stamp.sec = msg.header().stamp().sec();
-            ros_msg.header.stamp.nanosec = msg.header().stamp().nanosec();
-        }
+        ros_msg.header = compute_header(msg.header());
     }
 
     // actuators
@@ -101,11 +110,7 @@ void SynapseRos::publish_odometry(const synapse::msgs::Odometry& msg)
 
     // header
     if (msg.has_header()) {
-        ros_msg.header.frame_id = msg.header().frame_id();
-        if (msg.header().has_stamp()) {
-            ros_msg.header.stamp.sec = msg.header().stamp().sec();
-            ros_msg.header.stamp.nanosec = msg.header().stamp().nanosec();
-        }
+        ros_msg.header = compute_header(msg.header());
     }
 
     // child frame id
@@ -137,11 +142,7 @@ void SynapseRos::publish_battery_state(const synapse::msgs::BatteryState& msg)
 
     // header
     if (msg.has_header()) {
-        ros_msg.header.frame_id = msg.header().frame_id();
-        if (msg.header().has_stamp()) {
-            ros_msg.header.stamp.sec = msg.header().stamp().sec();
-            ros_msg.header.stamp.nanosec = msg.header().stamp().nanosec();
-        }
+        ros_msg.header = compute_header(msg.header());
     }
 
     ros_msg.voltage = msg.voltage();
@@ -154,11 +155,7 @@ void SynapseRos::publish_fsm(const synapse::msgs::Fsm& msg)
 
     // header
     if (msg.has_header()) {
-        ros_msg.header.frame_id = msg.header().frame_id();
-        if (msg.header().has_stamp()) {
-            ros_msg.header.stamp.sec = msg.header().stamp().sec();
-            ros_msg.header.stamp.nanosec = msg.header().stamp().nanosec();
-        }
+        ros_msg.header = compute_header(msg.header());
     }
 
     ros_msg.mode = msg.mode();
@@ -173,11 +170,7 @@ void SynapseRos::publish_safety(const synapse::msgs::Safety& msg)
 
     // header
     if (msg.has_header()) {
-        ros_msg.header.frame_id = msg.header().frame_id();
-        if (msg.header().has_stamp()) {
-            ros_msg.header.stamp.sec = msg.header().stamp().sec();
-            ros_msg.header.stamp.nanosec = msg.header().stamp().nanosec();
-        }
+        ros_msg.header = compute_header(msg.header());
     }
 
     ros_msg.status = msg.status();
@@ -189,13 +182,13 @@ void SynapseRos::publish_uptime(const synapse::msgs::Time& msg)
 {
     builtin_interfaces::msg::Time ros_uptime;
 
-    rclcpp::Time::now();
+    rclcpp::Time now = rclcpp::Clock { RCL_ROS_TIME }.now();
 
     ros_uptime.sec = msg.sec();
     ros_uptime.nanosec = msg.nanosec();
 
-    ros_clock_offset.sec = msg.sec();
-    ros_clock_offset.nanosec = msg.nanosec();
+    ros_clock_offset_.sec = now.seconds() - msg.sec();
+    ros_clock_offset_.nanosec = now.nanoseconds() - msg.nanosec();
 
     pub_uptime_->publish(ros_uptime);
     pub_clock_offset_->publish(ros_clock_offset_);
@@ -369,21 +362,6 @@ void SynapseRos::led_array_callback(const synapse_msgs::msg::LEDArray& msg) cons
         std::cerr << "Failed to serialize LEDArray" << std::endl;
     }
     tf_send(SYNAPSE_LED_ARRAY_TOPIC, data);
-}
-
-void SynapseRos::clock_offset_callback(const builtin_interfaces::msg::Time& msg) const
-{
-    // construct empty syn_msg
-    synapse::msgs::Time syn_msg {};
-
-    syn_msg.set_sec(msg.sec);
-    syn_msg.set_nanosec(msg.nanosec);
-
-    std::string data;
-    if (!syn_msg.SerializeToString(&data)) {
-        std::cerr << "Failed to serialize Clock Offset" << std::endl;
-    }
-    tf_send(SYNAPSE_CLOCK_OFFSET_TOPIC, data);
 }
 
 void SynapseRos::tf_send(int topic, const std::string& data) const
