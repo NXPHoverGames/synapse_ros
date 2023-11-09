@@ -44,9 +44,6 @@ SynapseRos::SynapseRos()
     sub_led_array_ = this->create_subscription<synapse_msgs::msg::LEDArray>(
         "in/led_array", 10, std::bind(&SynapseRos::led_array_callback, this, _1));
 
-    sub_clock_offset_ = this->create_subscription<builtin_interfaces::msg::Time>(
-        "in/clock_offset", 10, std::bind(&SynapseRos::clock_offset_callback, this, _1));
-
     // publications cerebri -> ros
     pub_actuators_ = this->create_publisher<actuator_msgs::msg::Actuators>("out/actuators", 10);
     pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("out/odometry", 10);
@@ -54,6 +51,7 @@ SynapseRos::SynapseRos()
     pub_fsm_ = this->create_publisher<synapse_msgs::msg::FSM>("out/fsm", 10);
     pub_safety_ = this->create_publisher<synapse_msgs::msg::Safety>("out/safety", 10);
     pub_uptime_ = this->create_publisher<builtin_interfaces::msg::Time>("out/uptime", 10);
+    pub_clock_offset_ = this->create_publisher<builtin_interfaces::msg::Time>("out/uptime", 10);
 
     // create tcp client
     g_tcp_client = std::make_shared<TcpClient>(host, port);
@@ -189,12 +187,18 @@ void SynapseRos::publish_safety(const synapse::msgs::Safety& msg)
 
 void SynapseRos::publish_uptime(const synapse::msgs::Time& msg)
 {
-    builtin_interfaces::msg::Time ros_msg;
+    builtin_interfaces::msg::Time ros_uptime;
 
-    ros_msg.sec = msg.sec();
-    ros_msg.nanosec = msg.nanosec();
+    rclcpp::Time::now();
 
-    pub_uptime_->publish(ros_msg);
+    ros_uptime.sec = msg.sec();
+    ros_uptime.nanosec = msg.nanosec();
+
+    ros_clock_offset.sec = msg.sec();
+    ros_clock_offset.nanosec = msg.nanosec();
+
+    pub_uptime_->publish(ros_uptime);
+    pub_clock_offset_->publish(ros_clock_offset_);
 }
 
 void SynapseRos::actuators_callback(const actuator_msgs::msg::Actuators& msg) const

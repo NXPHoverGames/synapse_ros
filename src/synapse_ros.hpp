@@ -57,6 +57,7 @@ public:
 
 private:
     std::shared_ptr<TinyFrame> tf_ {};
+    builtin_interfaces::msg::Time ros_clock_offset_;
 
     // subscriptions ros -> cerebri
     rclcpp::Subscription<actuator_msgs::msg::Actuators>::SharedPtr sub_actuators_;
@@ -77,9 +78,6 @@ private:
     rclcpp::Subscription<synapse_msgs::msg::LEDArray>::SharedPtr sub_led_array_;
     void led_array_callback(const synapse_msgs::msg::LEDArray& msg) const;
 
-    rclcpp::Subscription<builtin_interfaces::msg::Time>::SharedPtr sub_clock_offset_;
-    void clock_offset_callback(const builtin_interfaces::msg::Time& msg) const;
-
     // publications cerebri -> ros
     rclcpp::Publisher<actuator_msgs::msg::Actuators>::SharedPtr pub_actuators_;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odometry_;
@@ -87,6 +85,7 @@ private:
     rclcpp::Publisher<synapse_msgs::msg::FSM>::SharedPtr pub_fsm_;
     rclcpp::Publisher<synapse_msgs::msg::Safety>::SharedPtr pub_safety_;
     rclcpp::Publisher<builtin_interfaces::msg::Time>::SharedPtr pub_uptime_;
+    rclcpp::Publisher<builtin_interfaces::msg::Time>::SharedPtr pub_clock_offset_;
 
     // callbacks
     std::shared_ptr<std::thread> tcp_thread_;
