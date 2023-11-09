@@ -3,8 +3,9 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-#include "synapse_tinyframe/TinyFrame.h"
 #include <memory>
+
+#include "synapse_tinyframe/TinyFrame.h"
 #include <rclcpp/subscription_options.hpp>
 #include <synapse_msgs/msg/detail/led_array__struct.hpp>
 
@@ -35,6 +36,9 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "synapse_protobuf/twist.pb.h"
 
+#include "builtin_interfaces/msg/time.hpp"
+#include "synapse_protobuf/time.pb.h"
+
 class TcpClient;
 
 void tcp_entry_point();
@@ -49,6 +53,7 @@ public:
     void publish_battery_state(const synapse::msgs::BatteryState& msg);
     void publish_fsm(const synapse::msgs::Fsm& msg);
     void publish_safety(const synapse::msgs::Safety& msg);
+    void publish_uptime(const synapse::msgs::Time& msg);
 
 private:
     std::shared_ptr<TinyFrame> tf_ {};
@@ -72,12 +77,16 @@ private:
     rclcpp::Subscription<synapse_msgs::msg::LEDArray>::SharedPtr sub_led_array_;
     void led_array_callback(const synapse_msgs::msg::LEDArray& msg) const;
 
+    rclcpp::Subscription<builtin_interfaces::msg::Time>::SharedPtr sub_clock_offset_;
+    void clock_offset_callback(const builtin_interfaces::msg::Time& msg) const;
+
     // publications cerebri -> ros
     rclcpp::Publisher<actuator_msgs::msg::Actuators>::SharedPtr pub_actuators_;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odometry_;
     rclcpp::Publisher<sensor_msgs::msg::BatteryState>::SharedPtr pub_battery_state_;
     rclcpp::Publisher<synapse_msgs::msg::FSM>::SharedPtr pub_fsm_;
     rclcpp::Publisher<synapse_msgs::msg::Safety>::SharedPtr pub_safety_;
+    rclcpp::Publisher<builtin_interfaces::msg::Time>::SharedPtr pub_uptime_;
 
     // callbacks
     std::shared_ptr<std::thread> tcp_thread_;

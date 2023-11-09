@@ -44,12 +44,16 @@ SynapseRos::SynapseRos()
     sub_led_array_ = this->create_subscription<synapse_msgs::msg::LEDArray>(
         "in/led_array", 10, std::bind(&SynapseRos::led_array_callback, this, _1));
 
+    sub_clock_offset_ = this->create_subscription<builtin_interfaces::msg::Time>(
+        "in/clock_offset", 10, std::bind(&SynapseRos::clock_offset_callback, this, _1));
+
     // publications cerebri -> ros
     pub_actuators_ = this->create_publisher<actuator_msgs::msg::Actuators>("out/actuators", 10);
     pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("out/odometry", 10);
     pub_battery_state_ = this->create_publisher<sensor_msgs::msg::BatteryState>("out/battery_state", 10);
     pub_fsm_ = this->create_publisher<synapse_msgs::msg::FSM>("out/fsm", 10);
     pub_safety_ = this->create_publisher<synapse_msgs::msg::Safety>("out/safety", 10);
+    pub_uptime_ = this->create_publisher<builtin_interfaces::msg::Time>("out/uptime", 10);
 
     // create tcp client
     g_tcp_client = std::make_shared<TcpClient>(host, port);
@@ -181,6 +185,16 @@ void SynapseRos::publish_safety(const synapse::msgs::Safety& msg)
     ros_msg.status = msg.status();
 
     pub_safety_->publish(ros_msg);
+}
+
+void SynapseRos::publish_uptime(const synapse::msgs::Time& msg)
+{
+    builtin_interfaces::msg::Time ros_msg;
+
+    ros_msg.sec = msg.sec();
+    ros_msg.nanosec = msg.nanosec();
+
+    pub_uptime_->publish(ros_msg);
 }
 
 void SynapseRos::actuators_callback(const actuator_msgs::msg::Actuators& msg) const
@@ -351,6 +365,21 @@ void SynapseRos::led_array_callback(const synapse_msgs::msg::LEDArray& msg) cons
         std::cerr << "Failed to serialize LEDArray" << std::endl;
     }
     tf_send(SYNAPSE_LED_ARRAY_TOPIC, data);
+}
+
+void SynapseRos::clock_offset_callback(const builtin_interfaces::msg::Time& msg) const
+{
+    // construct empty syn_msg
+    synapse::msgs::Time syn_msg {};
+
+    syn_msg.set_sec(msg.sec);
+    syn_msg.set_nanosec(msg.nanosec);
+
+    std::string data;
+    if (!syn_msg.SerializeToString(&data)) {
+        std::cerr << "Failed to serialize Clock Offset" << std::endl;
+    }
+    tf_send(SYNAPSE_CLOCK_OFFSET_TOPIC, data);
 }
 
 void SynapseRos::tf_send(int topic, const std::string& data) const
