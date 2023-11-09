@@ -45,6 +45,7 @@ private:
     static TF_Result battery_state_listener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result fsm_listener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result safety_listener(TinyFrame* tf, TF_Msg* frame);
+    static TF_Result uptime_listener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result generic_listener(TinyFrame* tf, TF_Msg* msg);
 };
 

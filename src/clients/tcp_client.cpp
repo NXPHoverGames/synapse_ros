@@ -83,6 +83,7 @@ TcpClient::TcpClient(std::string host, int port)
     TF_AddTypeListener(tf_.get(), SYNAPSE_BATTERY_STATE_TOPIC, TcpClient::battery_state_listener);
     TF_AddTypeListener(tf_.get(), SYNAPSE_FSM_TOPIC, TcpClient::fsm_listener);
     TF_AddTypeListener(tf_.get(), SYNAPSE_SAFETY_TOPIC, TcpClient::safety_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_UPTIME_TOPIC, TcpClient::uptime_listener);
     timer_.async_wait(std::bind(&TcpClient::tick, this, _1));
 }
 
@@ -244,6 +245,23 @@ TF_Result TcpClient::out_cmd_vel_listener(TinyFrame* tf, TF_Msg* frame)
         std::cerr << "Failed to out_cmd_vel" << std::endl;
         return TF_STAY;
     } else {
+    }
+    return TF_STAY;
+}
+
+TF_Result TcpClient::uptime_listener(TinyFrame* tf, TF_Msg* frame)
+{
+    // parse protobuf message
+    synapse::msgs::Time syn_msg;
+    if (!syn_msg.ParseFromArray(frame->data, frame->len)) {
+        std::cerr << "Failed to parse uptime" << std::endl;
+        return TF_STAY;
+    }
+
+    // send to ros
+    TcpClient* tcp_client = (TcpClient*)tf->userdata;
+    if (tcp_client->ros_ != NULL) {
+        tcp_client->ros_->publish_uptime(syn_msg);
     }
     return TF_STAY;
 }
