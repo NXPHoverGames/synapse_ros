@@ -53,7 +53,7 @@ SynapseRos::SynapseRos()
     pub_fsm_ = this->create_publisher<synapse_msgs::msg::FSM>("out/fsm", 10);
     pub_safety_ = this->create_publisher<synapse_msgs::msg::Safety>("out/safety", 10);
     pub_uptime_ = this->create_publisher<builtin_interfaces::msg::Time>("out/uptime", 10);
-    pub_clock_offset_ = this->create_publisher<builtin_interfaces::msg::Time>("out/uptime", 10);
+    pub_clock_offset_ = this->create_publisher<builtin_interfaces::msg::Time>("out/clock_offset", 10);
 
     // create tcp client
     g_tcp_client = std::make_shared<TcpClient>(host, port);
