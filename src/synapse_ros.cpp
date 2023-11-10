@@ -181,14 +181,16 @@ void SynapseRos::publish_safety(const synapse::msgs::Safety& msg)
 void SynapseRos::publish_uptime(const synapse::msgs::Time& msg)
 {
     builtin_interfaces::msg::Time ros_uptime;
-
     rclcpp::Time now = rclcpp::Clock { RCL_ROS_TIME }.now();
+
+    int64_t uptime_nanos = msg.sec()*1e9 + msg.nanosec();
+    int64_t clock_offset_nanos = now.nanoseconds() - uptime_nanos;
+
+    ros_clock_offset_.sec = clock_offset_nanos / 1e9;
+    ros_clock_offset_.nanosec = clock_offset_nanos - ros_uptime.sec*1e9;
 
     ros_uptime.sec = msg.sec();
     ros_uptime.nanosec = msg.nanosec();
-
-    ros_clock_offset_.sec = now.seconds() - msg.sec();
-    ros_clock_offset_.nanosec = now.nanoseconds() - msg.nanosec();
 
     pub_uptime_->publish(ros_uptime);
     pub_clock_offset_->publish(ros_clock_offset_);
