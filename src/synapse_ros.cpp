@@ -1,12 +1,13 @@
 #include "synapse_ros.hpp"
 #include "clients/tcp_client.hpp"
-#include <std_msgs/msg/detail/header__struct.hpp>
-#include <synapse_msgs/msg/detail/led_array__struct.hpp>
-#include <synapse_msgs/msg/detail/safety__struct.hpp>
-#include <synapse_protobuf/header.pb.h>
-#include <synapse_protobuf/led.pb.h>
-#include <synapse_protobuf/safety.pb.h>
-#include <synapse_tinyframe/SynapseTopics.h>
+#include <sensor_msgs/msg/detail/battery_state__struct.hpp>
+#include <sensor_msgs/msg/detail/joint_state__struct.hpp>
+#include <sensor_msgs/msg/detail/magnetic_field__struct.hpp>
+#include <sensor_msgs/msg/detail/nav_sat_fix__struct.hpp>
+#include <synapse_protobuf/battery_state.pb.h>
+#include <synapse_protobuf/magnetic_field.pb.h>
+#include <synapse_protobuf/nav_sat_fix.pb.h>
+#include <synapse_protobuf/wheel_odometry.pb.h>
 
 using std::placeholders::_1;
 std::shared_ptr<TcpClient> g_tcp_client { NULL };
@@ -45,6 +46,21 @@ SynapseRos::SynapseRos()
 
     sub_led_array_ = this->create_subscription<synapse_msgs::msg::LEDArray>(
         "in/led_array", 10, std::bind(&SynapseRos::led_array_callback, this, _1));
+
+    sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(
+        "in/imu", 10, std::bind(&SynapseRos::imu_callback, this, _1));
+
+    sub_wheel_odometry_ = this->create_subscription<sensor_msgs::msg::JointState>(
+        "in/wheel_odometry", 10, std::bind(&SynapseRos::wheel_odometry_callback, this, _1));
+
+    sub_battery_state_ = this->create_subscription<sensor_msgs::msg::BatteryState>(
+        "in/battery_state", 10, std::bind(&SynapseRos::battery_state_callback, this, _1));
+
+    sub_magnetic_field_ = this->create_subscription<sensor_msgs::msg::MagneticField>(
+        "in/magnetic_field", 10, std::bind(&SynapseRos::magnetic_field_callback, this, _1));
+
+    sub_nav_sat_fix_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(
+        "in/nav_sat_fix", 10, std::bind(&SynapseRos::nav_sat_fix_callback, this, _1));
 
     // publications cerebri -> ros
     pub_actuators_ = this->create_publisher<actuator_msgs::msg::Actuators>("out/actuators", 10);
@@ -183,11 +199,11 @@ void SynapseRos::publish_uptime(const synapse::msgs::Time& msg)
     builtin_interfaces::msg::Time ros_uptime;
     rclcpp::Time now = rclcpp::Clock { RCL_ROS_TIME }.now();
 
-    int64_t uptime_nanos = msg.sec()*1e9 + msg.nanosec();
+    int64_t uptime_nanos = msg.sec() * 1e9 + msg.nanosec();
     int64_t clock_offset_nanos = now.nanoseconds() - uptime_nanos;
 
     ros_clock_offset_.sec = clock_offset_nanos / 1e9;
-    ros_clock_offset_.nanosec = clock_offset_nanos - ros_uptime.sec*1e9;
+    ros_clock_offset_.nanosec = clock_offset_nanos - ros_uptime.sec * 1e9;
 
     ros_uptime.sec = msg.sec();
     ros_uptime.nanosec = msg.nanosec();
@@ -364,6 +380,122 @@ void SynapseRos::led_array_callback(const synapse_msgs::msg::LEDArray& msg) cons
         std::cerr << "Failed to serialize LEDArray" << std::endl;
     }
     tf_send(SYNAPSE_LED_ARRAY_TOPIC, data);
+}
+
+void SynapseRos::imu_callback(const sensor_msgs::msg::Imu& msg) const
+{
+    // construct empty syn_msg
+    synapse::msgs::Imu syn_msg {};
+
+    // header
+    syn_msg.mutable_header()->set_frame_id(msg.header.frame_id);
+    syn_msg.mutable_header()->mutable_stamp()->set_sec(msg.header.stamp.sec);
+    syn_msg.mutable_header()->mutable_stamp()->set_nanosec(msg.header.stamp.nanosec);
+
+    // construct message
+    syn_msg.mutable_linear_acceleration()->set_x(msg.linear_acceleration.x);
+    syn_msg.mutable_linear_acceleration()->set_y(msg.linear_acceleration.y);
+    syn_msg.mutable_linear_acceleration()->set_z(msg.linear_acceleration.z);
+    syn_msg.mutable_angular_velocity()->set_x(msg.angular_velocity.x);
+    syn_msg.mutable_angular_velocity()->set_y(msg.angular_velocity.y);
+    syn_msg.mutable_angular_velocity()->set_z(msg.angular_velocity.z);
+
+    // serialize message
+    std::string data;
+    if (!syn_msg.SerializeToString(&data)) {
+        std::cerr << "Failed to serialize IMU" << std::endl;
+    }
+    tf_send(SYNAPSE_IMU_TOPIC, data);
+}
+
+void SynapseRos::wheel_odometry_callback(const sensor_msgs::msg::JointState& msg) const
+{
+    // construct empty syn_msg
+    synapse::msgs::WheelOdometry syn_msg {};
+
+    // header
+    syn_msg.mutable_header()->set_frame_id(msg.header.frame_id);
+    syn_msg.mutable_header()->mutable_stamp()->set_sec(msg.header.stamp.sec);
+    syn_msg.mutable_header()->mutable_stamp()->set_nanosec(msg.header.stamp.nanosec);
+
+    // construct message
+    int n_wheels = msg.position.size();
+    double rotation = 0;
+    for (int i = 0; i < n_wheels; i++) {
+        rotation += msg.position[i];
+    }
+    syn_msg.set_rotation(rotation);
+
+    // serialize message
+    std::string data;
+    if (!syn_msg.SerializeToString(&data)) {
+        std::cerr << "Failed to serialize WheelOdometry" << std::endl;
+    }
+    tf_send(SYNAPSE_WHEEL_ODOMETRY_TOPIC, data);
+}
+
+void SynapseRos::battery_state_callback(const sensor_msgs::msg::BatteryState& msg) const
+{
+    // construct empty syn_msg
+    synapse::msgs::BatteryState syn_msg {};
+
+    // header
+    syn_msg.mutable_header()->set_frame_id(msg.header.frame_id);
+    syn_msg.mutable_header()->mutable_stamp()->set_sec(msg.header.stamp.sec);
+    syn_msg.mutable_header()->mutable_stamp()->set_nanosec(msg.header.stamp.nanosec);
+
+    syn_msg.set_voltage(msg.voltage);
+
+    // serialize message
+    std::string data;
+    if (!syn_msg.SerializeToString(&data)) {
+        std::cerr << "Failed to serialize WheelOdometry" << std::endl;
+    }
+    tf_send(SYNAPSE_BATTERY_STATE_TOPIC, data);
+}
+
+void SynapseRos::magnetic_field_callback(const sensor_msgs::msg::MagneticField& msg) const
+{
+    // construct empty syn_msg
+    synapse::msgs::MagneticField syn_msg {};
+
+    // header
+    syn_msg.mutable_header()->set_frame_id(msg.header.frame_id);
+    syn_msg.mutable_header()->mutable_stamp()->set_sec(msg.header.stamp.sec);
+    syn_msg.mutable_header()->mutable_stamp()->set_nanosec(msg.header.stamp.nanosec);
+
+    syn_msg.mutable_magnetic_field()->set_x(msg.magnetic_field.x);
+    syn_msg.mutable_magnetic_field()->set_y(msg.magnetic_field.y);
+    syn_msg.mutable_magnetic_field()->set_z(msg.magnetic_field.z);
+
+    // serialize message
+    std::string data;
+    if (!syn_msg.SerializeToString(&data)) {
+        std::cerr << "Failed to serialize NavSatFix" << std::endl;
+    }
+    tf_send(SYNAPSE_NAV_SAT_FIX_TOPIC, data);
+}
+
+void SynapseRos::nav_sat_fix_callback(const sensor_msgs::msg::NavSatFix& msg) const
+{
+    // construct empty syn_msg
+    synapse::msgs::NavSatFix syn_msg {};
+
+    // header
+    syn_msg.mutable_header()->set_frame_id(msg.header.frame_id);
+    syn_msg.mutable_header()->mutable_stamp()->set_sec(msg.header.stamp.sec);
+    syn_msg.mutable_header()->mutable_stamp()->set_nanosec(msg.header.stamp.nanosec);
+
+    syn_msg.set_latitude(msg.latitude);
+    syn_msg.set_longitude(msg.longitude);
+    syn_msg.set_altitude(msg.altitude);
+
+    // serialize message
+    std::string data;
+    if (!syn_msg.SerializeToString(&data)) {
+        std::cerr << "Failed to serialize NavSatFix" << std::endl;
+    }
+    tf_send(SYNAPSE_NAV_SAT_FIX_TOPIC, data);
 }
 
 void SynapseRos::tf_send(int topic, const std::string& data) const
