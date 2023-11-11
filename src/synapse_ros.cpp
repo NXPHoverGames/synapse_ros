@@ -449,7 +449,7 @@ void SynapseRos::battery_state_callback(const sensor_msgs::msg::BatteryState& ms
     // serialize message
     std::string data;
     if (!syn_msg.SerializeToString(&data)) {
-        std::cerr << "Failed to serialize WheelOdometry" << std::endl;
+        std::cerr << "Failed to serialize BatteryState" << std::endl;
     }
     tf_send(SYNAPSE_BATTERY_STATE_TOPIC, data);
 }
@@ -471,9 +471,9 @@ void SynapseRos::magnetic_field_callback(const sensor_msgs::msg::MagneticField& 
     // serialize message
     std::string data;
     if (!syn_msg.SerializeToString(&data)) {
-        std::cerr << "Failed to serialize NavSatFix" << std::endl;
+        std::cerr << "Failed to serialize Magnetic Field" << std::endl;
     }
-    tf_send(SYNAPSE_NAV_SAT_FIX_TOPIC, data);
+    tf_send(SYNAPSE_MAGNETIC_FIELD_TOPIC, data);
 }
 
 void SynapseRos::nav_sat_fix_callback(const sensor_msgs::msg::NavSatFix& msg) const
