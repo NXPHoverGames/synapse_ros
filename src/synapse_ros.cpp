@@ -89,10 +89,10 @@ std_msgs::msg::Header SynapseRos::compute_header(const synapse::msgs::Header& ms
     std_msgs::msg::Header ros_msg;
     ros_msg.frame_id = msg.frame_id();
     if (msg.has_stamp()) {
-        int64_t sec =  msg.stamp().sec() + ros_clock_offset_.sec;
+        int64_t sec = msg.stamp().sec() + ros_clock_offset_.sec;
         int64_t nanos = msg.stamp().nanosec() + ros_clock_offset_.nanosec;
         int extra_sec = nanos / 1e9;
-        nanos -= extra_sec*1e9;
+        nanos -= extra_sec * 1e9;
         sec += extra_sec;
         ros_msg.stamp.sec = sec;
         ros_msg.stamp.nanosec = nanos;
