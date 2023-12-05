@@ -89,8 +89,13 @@ std_msgs::msg::Header SynapseRos::compute_header(const synapse::msgs::Header& ms
     std_msgs::msg::Header ros_msg;
     ros_msg.frame_id = msg.frame_id();
     if (msg.has_stamp()) {
-        ros_msg.stamp.sec = msg.stamp().sec() + ros_clock_offset_.sec;
-        ros_msg.stamp.nanosec = msg.stamp().nanosec() + ros_clock_offset_.nanosec;
+        int64_t sec =  msg.stamp().sec() + ros_clock_offset_.sec;
+        int64_t nanos = msg.stamp().nanosec() + ros_clock_offset_.nanosec;
+        int extra_sec = nanos / 1e9;
+        nanos -= extra_sec*1e9;
+        sec += extra_sec;
+        ros_msg.stamp.sec = sec;
+        ros_msg.stamp.nanosec = nanos;
     }
     return ros_msg;
 }
@@ -200,17 +205,13 @@ void SynapseRos::publish_uptime(const synapse::msgs::Time& msg)
     rclcpp::Time now = get_clock()->now();
 
     int64_t uptime_nanos = msg.sec() * 1e9 + msg.nanosec();
-    int64_t now_nanos = now.nanoseconds();
-    int64_t clock_offset_nanos = now_nanos - uptime_nanos;
+    int64_t clock_offset_nanos = now.nanoseconds() - uptime_nanos;
 
     ros_uptime.sec = msg.sec();
     ros_uptime.nanosec = msg.nanosec();
 
-    int32_t sec = clock_offset_nanos / 1e9;
-    uint32_t nanosec = clock_offset_nanos - sec * 1e9;
-
-    ros_clock_offset_.sec = sec;
-    ros_clock_offset_.nanosec = nanosec;
+    ros_clock_offset_.sec = clock_offset_nanos / 1e9;
+    ros_clock_offset_.nanosec = clock_offset_nanos - ros_clock_offset_.sec * 1e9;
 
     pub_uptime_->publish(ros_uptime);
     pub_clock_offset_->publish(ros_clock_offset_);
