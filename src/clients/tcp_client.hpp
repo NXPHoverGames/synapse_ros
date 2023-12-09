@@ -1,13 +1,11 @@
 #ifndef SYNAPSE_ROS_TCP_CLIENT_HPP__
 #define SYNAPSE_ROS_TCP_CLIENT_HPP__
 
-#include <algorithm>
 #include <boost/asio.hpp>
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/signal_set.hpp>
 
 #include "synapse_tinyframe/TinyFrame.h"
-#include "synapse_tinyframe/utils.h"
 
 class SynapseRos;
 
@@ -43,8 +41,7 @@ private:
     static TF_Result actuators_listener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result out_cmd_vel_listener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result battery_state_listener(TinyFrame* tf, TF_Msg* frame);
-    static TF_Result fsm_listener(TinyFrame* tf, TF_Msg* frame);
-    static TF_Result safety_listener(TinyFrame* tf, TF_Msg* frame);
+    static TF_Result status_listener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result uptime_listener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result generic_listener(TinyFrame* tf, TF_Msg* msg);
 };

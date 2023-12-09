@@ -1,17 +1,17 @@
-#include "tcp_client.hpp"
-#include "../synapse_ros.hpp"
+#include <synapse_tinyframe/SynapseTopics.h>
+#include <synapse_tinyframe/utils.h>
 
-#include "synapse_protobuf/actuators.pb.h"
-#include "synapse_protobuf/joy.pb.h"
-#include "synapse_protobuf/odometry.pb.h"
-#include "synapse_protobuf/twist.pb.h"
+#include <synapse_protobuf/actuators.pb.h>
+#include <synapse_protobuf/odometry.pb.h>
+#include <synapse_protobuf/twist.pb.h>
 
-#include "synapse_tinyframe/SynapseTopics.h"
 #include <boost/asio/error.hpp>
 #include <boost/date_time/posix_time/posix_time_config.hpp>
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
 #include <boost/system/error_code.hpp>
-#include <memory>
+
+#include "../synapse_ros.hpp"
+#include "tcp_client.hpp"
 
 using std::placeholders::_1;
 using std::placeholders::_2;
@@ -81,8 +81,7 @@ TcpClient::TcpClient(std::string host, int port)
     TF_AddTypeListener(tf_.get(), SYNAPSE_ACTUATORS_TOPIC, TcpClient::actuators_listener);
     TF_AddTypeListener(tf_.get(), SYNAPSE_ODOMETRY_TOPIC, TcpClient::odometry_listener);
     TF_AddTypeListener(tf_.get(), SYNAPSE_BATTERY_STATE_TOPIC, TcpClient::battery_state_listener);
-    TF_AddTypeListener(tf_.get(), SYNAPSE_FSM_TOPIC, TcpClient::fsm_listener);
-    TF_AddTypeListener(tf_.get(), SYNAPSE_SAFETY_TOPIC, TcpClient::safety_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_STATUS_TOPIC, TcpClient::status_listener);
     TF_AddTypeListener(tf_.get(), SYNAPSE_UPTIME_TOPIC, TcpClient::uptime_listener);
     timer_.async_wait(std::bind(&TcpClient::tick, this, _1));
 }
@@ -203,36 +202,19 @@ TF_Result TcpClient::battery_state_listener(TinyFrame* tf, TF_Msg* frame)
     return TF_STAY;
 }
 
-TF_Result TcpClient::fsm_listener(TinyFrame* tf, TF_Msg* frame)
+TF_Result TcpClient::status_listener(TinyFrame* tf, TF_Msg* frame)
 {
     // parse protobuf message
-    synapse::msgs::Fsm syn_msg;
+    synapse::msgs::Status syn_msg;
     if (!syn_msg.ParseFromArray(frame->data, frame->len)) {
-        std::cerr << "Failed to parse fsm" << std::endl;
+        std::cerr << "Failed to parse status" << std::endl;
         return TF_STAY;
     }
 
     // send to ros
     TcpClient* tcp_client = (TcpClient*)tf->userdata;
     if (tcp_client->ros_ != NULL) {
-        tcp_client->ros_->publish_fsm(syn_msg);
-    }
-    return TF_STAY;
-}
-
-TF_Result TcpClient::safety_listener(TinyFrame* tf, TF_Msg* frame)
-{
-    // parse protobuf message
-    synapse::msgs::Safety syn_msg;
-    if (!syn_msg.ParseFromArray(frame->data, frame->len)) {
-        std::cerr << "Failed to parse fsm" << std::endl;
-        return TF_STAY;
-    }
-
-    // send to ros
-    TcpClient* tcp_client = (TcpClient*)tf->userdata;
-    if (tcp_client->ros_ != NULL) {
-        tcp_client->ros_->publish_safety(syn_msg);
+        tcp_client->ros_->publish_status(syn_msg);
     }
     return TF_STAY;
 }

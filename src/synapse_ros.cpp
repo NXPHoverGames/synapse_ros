@@ -24,9 +24,11 @@ SynapseRos::SynapseRos()
 {
     this->declare_parameter("host", "192.0.2.1");
     this->declare_parameter("port", 4242);
+    this->declare_parameter("hil_mode", false);
 
     std::string host = this->get_parameter("host").as_string();
     int port = this->get_parameter("port").as_int();
+    bool hil_mode = this->get_parameter("hil_mode").as_bool();
 
     // subscriptions ros -> cerebri
     sub_actuators_ = this->create_subscription<actuator_msgs::msg::Actuators>(
@@ -44,30 +46,28 @@ SynapseRos::SynapseRos()
     sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>(
         "in/odometry", 10, std::bind(&SynapseRos::odometry_callback, this, _1));
 
-    sub_led_array_ = this->create_subscription<synapse_msgs::msg::LEDArray>(
-        "in/led_array", 10, std::bind(&SynapseRos::led_array_callback, this, _1));
+    if (hil_mode) {
+        sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(
+            "in/imu", 10, std::bind(&SynapseRos::imu_callback, this, _1));
 
-    sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(
-        "in/imu", 10, std::bind(&SynapseRos::imu_callback, this, _1));
+        sub_wheel_odometry_ = this->create_subscription<sensor_msgs::msg::JointState>(
+            "in/wheel_odometry", 10, std::bind(&SynapseRos::wheel_odometry_callback, this, _1));
 
-    sub_wheel_odometry_ = this->create_subscription<sensor_msgs::msg::JointState>(
-        "in/wheel_odometry", 10, std::bind(&SynapseRos::wheel_odometry_callback, this, _1));
+        sub_battery_state_ = this->create_subscription<sensor_msgs::msg::BatteryState>(
+            "in/battery_state", 10, std::bind(&SynapseRos::battery_state_callback, this, _1));
 
-    sub_battery_state_ = this->create_subscription<sensor_msgs::msg::BatteryState>(
-        "in/battery_state", 10, std::bind(&SynapseRos::battery_state_callback, this, _1));
+        sub_magnetic_field_ = this->create_subscription<sensor_msgs::msg::MagneticField>(
+            "in/magnetic_field", 10, std::bind(&SynapseRos::magnetic_field_callback, this, _1));
 
-    sub_magnetic_field_ = this->create_subscription<sensor_msgs::msg::MagneticField>(
-        "in/magnetic_field", 10, std::bind(&SynapseRos::magnetic_field_callback, this, _1));
-
-    sub_nav_sat_fix_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(
-        "in/nav_sat_fix", 10, std::bind(&SynapseRos::nav_sat_fix_callback, this, _1));
+        sub_nav_sat_fix_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(
+            "in/nav_sat_fix", 10, std::bind(&SynapseRos::nav_sat_fix_callback, this, _1));
+    }
 
     // publications cerebri -> ros
     pub_actuators_ = this->create_publisher<actuator_msgs::msg::Actuators>("out/actuators", 10);
     pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("out/odometry", 10);
     pub_battery_state_ = this->create_publisher<sensor_msgs::msg::BatteryState>("out/battery_state", 10);
-    pub_fsm_ = this->create_publisher<synapse_msgs::msg::FSM>("out/fsm", 10);
-    pub_safety_ = this->create_publisher<synapse_msgs::msg::Safety>("out/safety", 10);
+    pub_status_ = this->create_publisher<synapse_msgs::msg::Status>("out/status", 10);
     pub_uptime_ = this->create_publisher<builtin_interfaces::msg::Time>("out/uptime", 10);
     pub_clock_offset_ = this->create_publisher<builtin_interfaces::msg::Time>("out/clock_offset", 10);
 
@@ -170,33 +170,22 @@ void SynapseRos::publish_battery_state(const synapse::msgs::BatteryState& msg)
     pub_battery_state_->publish(ros_msg);
 }
 
-void SynapseRos::publish_fsm(const synapse::msgs::Fsm& msg)
+void SynapseRos::publish_status(const synapse::msgs::Status& msg)
 {
-    synapse_msgs::msg::FSM ros_msg;
+    synapse_msgs::msg::Status ros_msg;
 
     // header
     if (msg.has_header()) {
         ros_msg.header = compute_header(msg.header());
     }
 
+    ros_msg.arming = msg.arming();
+    ros_msg.fuel = msg.fuel();
+    ros_msg.joy = msg.joy();
     ros_msg.mode = msg.mode();
-    ros_msg.armed = msg.armed();
+    ros_msg.safety = msg.safety();
 
-    pub_fsm_->publish(ros_msg);
-}
-
-void SynapseRos::publish_safety(const synapse::msgs::Safety& msg)
-{
-    synapse_msgs::msg::Safety ros_msg;
-
-    // header
-    if (msg.has_header()) {
-        ros_msg.header = compute_header(msg.header());
-    }
-
-    ros_msg.status = msg.status();
-
-    pub_safety_->publish(ros_msg);
+    pub_status_->publish(ros_msg);
 }
 
 void SynapseRos::publish_uptime(const synapse::msgs::Time& msg)
@@ -359,32 +348,6 @@ void SynapseRos::odometry_callback(const nav_msgs::msg::Odometry& msg) const
         std::cerr << "Failed to serialize Odometry" << std::endl;
     }
     tf_send(SYNAPSE_ODOMETRY_TOPIC, data);
-}
-
-void SynapseRos::led_array_callback(const synapse_msgs::msg::LEDArray& msg) const
-{
-    // construct empty syn_msg
-    synapse::msgs::LEDArray syn_msg {};
-
-    // header
-    syn_msg.mutable_header()->set_frame_id(msg.header.frame_id);
-    syn_msg.mutable_header()->mutable_stamp()->set_sec(msg.header.stamp.sec);
-    syn_msg.mutable_header()->mutable_stamp()->set_nanosec(msg.header.stamp.nanosec);
-
-    // leds
-    for (auto i = 0u; i < msg.led.size(); ++i) {
-        synapse::msgs::LED* led = syn_msg.add_led();
-        led->set_index(msg.led[i].index);
-        led->set_b(msg.led[i].b);
-        led->set_g(msg.led[i].g);
-        led->set_r(msg.led[i].r);
-    }
-
-    std::string data;
-    if (!syn_msg.SerializeToString(&data)) {
-        std::cerr << "Failed to serialize LEDArray" << std::endl;
-    }
-    tf_send(SYNAPSE_LED_ARRAY_TOPIC, data);
 }
 
 void SynapseRos::imu_callback(const sensor_msgs::msg::Imu& msg) const
