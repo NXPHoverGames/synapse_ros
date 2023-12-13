@@ -10,8 +10,8 @@
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
 #include <boost/system/error_code.hpp>
 
-#include "../synapse_ros.hpp"
-#include "tcp_client.hpp"
+#include "../rx.hpp"
+#include "tcp_rx.hpp"
 
 using std::placeholders::_1;
 using std::placeholders::_2;
@@ -19,13 +19,13 @@ using std::placeholders::_2;
 static void write_tcp(TinyFrame* tf, const uint8_t* buf, uint32_t len)
 {
     // get tcp client attached to tf pointer in userdata
-    TcpClient* tcp_client = (TcpClient*)tf->userdata;
+    TcpRx* tcp_client = (TcpRx*)tf->userdata;
 
     // write buffer to tcp client
     tcp_client->write(buf, len);
 }
 
-TcpClient::TcpClient(std::string host, int port)
+TcpRx::TcpRx(std::string host, int port)
     : host_(host)
     , port_(port)
 {
@@ -76,17 +76,17 @@ TcpClient::TcpClient(std::string host, int port)
     tf_->usertag = 0;
     tf_->userdata = this;
     tf_->write = write_tcp;
-    TF_AddGenericListener(tf_.get(), TcpClient::generic_listener);
-    TF_AddTypeListener(tf_.get(), SYNAPSE_CMD_VEL_TOPIC, TcpClient::out_cmd_vel_listener);
-    TF_AddTypeListener(tf_.get(), SYNAPSE_ACTUATORS_TOPIC, TcpClient::actuators_listener);
-    TF_AddTypeListener(tf_.get(), SYNAPSE_ODOMETRY_TOPIC, TcpClient::odometry_listener);
-    TF_AddTypeListener(tf_.get(), SYNAPSE_BATTERY_STATE_TOPIC, TcpClient::battery_state_listener);
-    TF_AddTypeListener(tf_.get(), SYNAPSE_STATUS_TOPIC, TcpClient::status_listener);
-    TF_AddTypeListener(tf_.get(), SYNAPSE_UPTIME_TOPIC, TcpClient::uptime_listener);
-    timer_.async_wait(std::bind(&TcpClient::tick, this, _1));
+    TF_AddGenericListener(tf_.get(), TcpRx::generic_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_CMD_VEL_TOPIC, TcpRx::out_cmd_vel_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_ACTUATORS_TOPIC, TcpRx::actuators_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_ODOMETRY_TOPIC, TcpRx::odometry_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_BATTERY_STATE_TOPIC, TcpRx::battery_state_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_STATUS_TOPIC, TcpRx::status_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_UPTIME_TOPIC, TcpRx::uptime_listener);
+    timer_.async_wait(std::bind(&TcpRx::tick, this, _1));
 }
 
-void TcpClient::handle_connect(
+void TcpRx::handle_connect(
     const boost::system::error_code& ec,
     const boost::asio::ip::tcp::endpoint& endpoint)
 {
@@ -101,25 +101,25 @@ void TcpClient::handle_connect(
     }
 }
 
-void TcpClient::tick(const boost::system::error_code& /*e*/)
+void TcpRx::tick(const boost::system::error_code& /*e*/)
 {
     if (connected_) {
         sockfd_.async_receive(boost::asio::buffer(rx_buf_, rx_buf_length_),
-            std::bind(&TcpClient::rx_handler, this, _1, _2));
+            std::bind(&TcpRx::rx_handler, this, _1, _2));
     } else {
         boost::asio::async_connect(
             sockfd_,
             resolver_.resolve(host_, std::to_string(port_)),
-            std::bind(&TcpClient::handle_connect, this, _1, _2));
+            std::bind(&TcpRx::handle_connect, this, _1, _2));
     }
 
     boost::posix_time::time_duration wait;
     wait = boost::posix_time::milliseconds(100);
     timer_.expires_at(timer_.expires_at() + wait);
-    timer_.async_wait(std::bind(&TcpClient::tick, this, _1));
+    timer_.async_wait(std::bind(&TcpRx::tick, this, _1));
 }
 
-void TcpClient::tx_handler(const boost::system::error_code& ec, std::size_t bytes_transferred)
+void TcpRx::tx_handler(const boost::system::error_code& ec, std::size_t bytes_transferred)
 {
     (void)bytes_transferred;
     if (ec == boost::asio::error::eof) {
@@ -133,7 +133,7 @@ void TcpClient::tx_handler(const boost::system::error_code& ec, std::size_t byte
     }
 }
 
-void TcpClient::rx_handler(const boost::system::error_code& ec, std::size_t bytes_transferred)
+void TcpRx::rx_handler(const boost::system::error_code& ec, std::size_t bytes_transferred)
 {
     if (ec == boost::asio::error::eof) {
         std::cerr << "reconnecting due to eof" << std::endl;
@@ -149,12 +149,12 @@ void TcpClient::rx_handler(const boost::system::error_code& ec, std::size_t byte
     }
 }
 
-TF_Result TcpClient::actuators_listener(TinyFrame* tf, TF_Msg* frame)
+TF_Result TcpRx::actuators_listener(TinyFrame* tf, TF_Msg* frame)
 {
     synapse::msgs::Actuators msg;
 
     // get tcp client attached to tf pointer in userdata
-    TcpClient* tcp_client = (TcpClient*)tf->userdata;
+    TcpRx* tcp_client = (TcpRx*)tf->userdata;
 
     if (!msg.ParseFromArray(frame->data, frame->len)) {
         std::cerr << "Failed to parse actuators" << std::endl;
@@ -168,7 +168,7 @@ TF_Result TcpClient::actuators_listener(TinyFrame* tf, TF_Msg* frame)
     return TF_STAY;
 }
 
-TF_Result TcpClient::odometry_listener(TinyFrame* tf, TF_Msg* frame)
+TF_Result TcpRx::odometry_listener(TinyFrame* tf, TF_Msg* frame)
 {
     // parse protobuf message
     synapse::msgs::Odometry syn_msg;
@@ -178,14 +178,14 @@ TF_Result TcpClient::odometry_listener(TinyFrame* tf, TF_Msg* frame)
     }
 
     // send to ros
-    TcpClient* tcp_client = (TcpClient*)tf->userdata;
+    TcpRx* tcp_client = (TcpRx*)tf->userdata;
     if (tcp_client->ros_ != NULL) {
         tcp_client->ros_->publish_odometry(syn_msg);
     }
     return TF_STAY;
 }
 
-TF_Result TcpClient::battery_state_listener(TinyFrame* tf, TF_Msg* frame)
+TF_Result TcpRx::battery_state_listener(TinyFrame* tf, TF_Msg* frame)
 {
     // parse protobuf message
     synapse::msgs::BatteryState syn_msg;
@@ -195,14 +195,14 @@ TF_Result TcpClient::battery_state_listener(TinyFrame* tf, TF_Msg* frame)
     }
 
     // send to ros
-    TcpClient* tcp_client = (TcpClient*)tf->userdata;
+    TcpRx* tcp_client = (TcpRx*)tf->userdata;
     if (tcp_client->ros_ != NULL) {
         tcp_client->ros_->publish_battery_state(syn_msg);
     }
     return TF_STAY;
 }
 
-TF_Result TcpClient::status_listener(TinyFrame* tf, TF_Msg* frame)
+TF_Result TcpRx::status_listener(TinyFrame* tf, TF_Msg* frame)
 {
     // parse protobuf message
     synapse::msgs::Status syn_msg;
@@ -212,14 +212,14 @@ TF_Result TcpClient::status_listener(TinyFrame* tf, TF_Msg* frame)
     }
 
     // send to ros
-    TcpClient* tcp_client = (TcpClient*)tf->userdata;
+    TcpRx* tcp_client = (TcpRx*)tf->userdata;
     if (tcp_client->ros_ != NULL) {
         tcp_client->ros_->publish_status(syn_msg);
     }
     return TF_STAY;
 }
 
-TF_Result TcpClient::out_cmd_vel_listener(TinyFrame* tf, TF_Msg* frame)
+TF_Result TcpRx::out_cmd_vel_listener(TinyFrame* tf, TF_Msg* frame)
 {
     (void)tf;
     synapse::msgs::Twist msg;
@@ -231,7 +231,7 @@ TF_Result TcpClient::out_cmd_vel_listener(TinyFrame* tf, TF_Msg* frame)
     return TF_STAY;
 }
 
-TF_Result TcpClient::uptime_listener(TinyFrame* tf, TF_Msg* frame)
+TF_Result TcpRx::uptime_listener(TinyFrame* tf, TF_Msg* frame)
 {
     // parse protobuf message
     synapse::msgs::Time syn_msg;
@@ -241,14 +241,14 @@ TF_Result TcpClient::uptime_listener(TinyFrame* tf, TF_Msg* frame)
     }
 
     // send to ros
-    TcpClient* tcp_client = (TcpClient*)tf->userdata;
+    TcpRx* tcp_client = (TcpRx*)tf->userdata;
     if (tcp_client->ros_ != NULL) {
         tcp_client->ros_->publish_uptime(syn_msg);
     }
     return TF_STAY;
 }
 
-TF_Result TcpClient::generic_listener(TinyFrame* tf, TF_Msg* msg)
+TF_Result TcpRx::generic_listener(TinyFrame* tf, TF_Msg* msg)
 {
     (void)tf;
     int type = msg->type;
@@ -257,16 +257,16 @@ TF_Result TcpClient::generic_listener(TinyFrame* tf, TF_Msg* msg)
     return TF_STAY;
 }
 
-void TcpClient::run_for(std::chrono::seconds sec)
+void TcpRx::run_for(std::chrono::seconds sec)
 {
     io_context_.run_for(std::chrono::seconds(sec));
 }
 
-void TcpClient::write(const uint8_t* buf, uint32_t len)
+void TcpRx::write(const uint8_t* buf, uint32_t len)
 {
     if (connected_) {
         boost::asio::async_write(sockfd_, boost::asio::buffer(buf, len),
-            std::bind(&TcpClient::tx_handler, this, _1, _2));
+            std::bind(&TcpRx::tx_handler, this, _1, _2));
     }
 }
 

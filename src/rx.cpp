@@ -1,5 +1,5 @@
-#include "synapse_ros.hpp"
-#include "clients/tcp_client.hpp"
+#include "rx.hpp"
+#include "clients/tcp_rx.hpp"
 #include <sensor_msgs/msg/detail/battery_state__struct.hpp>
 #include <sensor_msgs/msg/detail/joint_state__struct.hpp>
 #include <sensor_msgs/msg/detail/magnetic_field__struct.hpp>
@@ -10,7 +10,7 @@
 #include <synapse_protobuf/wheel_odometry.pb.h>
 
 using std::placeholders::_1;
-std::shared_ptr<TcpClient> g_tcp_client { NULL };
+std::shared_ptr<TcpRx> g_tcp_client { NULL };
 
 void tcp_entry_point()
 {
@@ -19,51 +19,16 @@ void tcp_entry_point()
     }
 }
 
-SynapseRos::SynapseRos()
-    : Node("synapse_ros")
+Rx::Rx()
+    : Node("synapse_ros_rx")
 {
-    this->declare_parameter("host", "192.0.2.1");
-    this->declare_parameter("tx_port", 4242);
-    this->declare_parameter("rx_port", 4243);
+    this->declare_parameter("cerebri_host", "192.0.2.1");
+    this->declare_parameter("cerebri_port", 4243);
     this->declare_parameter("hil_mode", false);
 
     std::string host = this->get_parameter("host").as_string();
-    int tx_port = this->get_parameter("tx_port").as_int();
-    int rx_port = this->get_parameter("rx_port").as_int();
+    int port = this->get_parameter("port").as_int();
     bool hil_mode = this->get_parameter("hil_mode").as_bool();
-
-    // subscriptions ros -> cerebri
-    sub_actuators_ = this->create_subscription<actuator_msgs::msg::Actuators>(
-        "in/actuators", 10, std::bind(&SynapseRos::actuators_callback, this, _1));
-
-    sub_bezier_trajectory_ = this->create_subscription<synapse_msgs::msg::BezierTrajectory>(
-        "in/bezier_trajectory", 10, std::bind(&SynapseRos::bezier_trajectory_callback, this, _1));
-
-    sub_cmd_vel_ = this->create_subscription<geometry_msgs::msg::Twist>(
-        "in/cmd_vel", 10, std::bind(&SynapseRos::cmd_vel_callback, this, _1));
-
-    sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>(
-        "in/joy", 10, std::bind(&SynapseRos::joy_callback, this, _1));
-
-    sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>(
-        "in/odometry", 10, std::bind(&SynapseRos::odometry_callback, this, _1));
-
-    if (hil_mode) {
-        sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(
-            "in/imu", 10, std::bind(&SynapseRos::imu_callback, this, _1));
-
-        sub_wheel_odometry_ = this->create_subscription<sensor_msgs::msg::JointState>(
-            "in/wheel_odometry", 10, std::bind(&SynapseRos::wheel_odometry_callback, this, _1));
-
-        sub_battery_state_ = this->create_subscription<sensor_msgs::msg::BatteryState>(
-            "in/battery_state", 10, std::bind(&SynapseRos::battery_state_callback, this, _1));
-
-        sub_magnetic_field_ = this->create_subscription<sensor_msgs::msg::MagneticField>(
-            "in/magnetic_field", 10, std::bind(&SynapseRos::magnetic_field_callback, this, _1));
-
-        sub_nav_sat_fix_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(
-            "in/nav_sat_fix", 10, std::bind(&SynapseRos::nav_sat_fix_callback, this, _1));
-    }
 
     // publications cerebri -> ros
     pub_actuators_ = this->create_publisher<actuator_msgs::msg::Actuators>("out/actuators", 10);
@@ -74,19 +39,19 @@ SynapseRos::SynapseRos()
     pub_clock_offset_ = this->create_publisher<builtin_interfaces::msg::Time>("out/clock_offset", 10);
 
     // create tcp client
-    g_tcp_client = std::make_shared<TcpClient>(host, port);
+    g_tcp_client = std::make_shared<TcpRx>(host, port);
     g_tcp_client.get()->ros_ = this;
     tf_ = g_tcp_client.get()->tf_;
     tcp_thread_ = std::make_shared<std::thread>(tcp_entry_point);
 }
 
-SynapseRos::~SynapseRos()
+Rx::~Rx()
 {
     // join threads
     tcp_thread_->join();
 }
 
-std_msgs::msg::Header SynapseRos::compute_header(const synapse::msgs::Header& msg)
+std_msgs::msg::Header Rx::compute_header(const synapse::msgs::Header& msg)
 {
     std_msgs::msg::Header ros_msg;
     ros_msg.frame_id = msg.frame_id();
@@ -102,7 +67,7 @@ std_msgs::msg::Header SynapseRos::compute_header(const synapse::msgs::Header& ms
     return ros_msg;
 }
 
-void SynapseRos::publish_actuators(const synapse::msgs::Actuators& msg)
+void Rx::publish_actuators(const synapse::msgs::Actuators& msg)
 {
     actuator_msgs::msg::Actuators ros_msg;
 
@@ -127,7 +92,7 @@ void SynapseRos::publish_actuators(const synapse::msgs::Actuators& msg)
     pub_actuators_->publish(ros_msg);
 }
 
-void SynapseRos::publish_odometry(const synapse::msgs::Odometry& msg)
+void Rx::publish_odometry(const synapse::msgs::Odometry& msg)
 {
     nav_msgs::msg::Odometry ros_msg;
 
@@ -159,7 +124,7 @@ void SynapseRos::publish_odometry(const synapse::msgs::Odometry& msg)
     pub_odometry_->publish(ros_msg);
 }
 
-void SynapseRos::publish_battery_state(const synapse::msgs::BatteryState& msg)
+void Rx::publish_battery_state(const synapse::msgs::BatteryState& msg)
 {
     sensor_msgs::msg::BatteryState ros_msg;
 
@@ -172,7 +137,7 @@ void SynapseRos::publish_battery_state(const synapse::msgs::BatteryState& msg)
     pub_battery_state_->publish(ros_msg);
 }
 
-void SynapseRos::publish_status(const synapse::msgs::Status& msg)
+void Rx::publish_status(const synapse::msgs::Status& msg)
 {
     synapse_msgs::msg::Status ros_msg;
 
@@ -195,7 +160,7 @@ void SynapseRos::publish_status(const synapse::msgs::Status& msg)
     pub_status_->publish(ros_msg);
 }
 
-void SynapseRos::publish_uptime(const synapse::msgs::Time& msg)
+void Rx::publish_uptime(const synapse::msgs::Time& msg)
 {
     builtin_interfaces::msg::Time ros_uptime;
     rclcpp::Time now = get_clock()->now();
@@ -213,7 +178,7 @@ void SynapseRos::publish_uptime(const synapse::msgs::Time& msg)
     pub_clock_offset_->publish(ros_clock_offset_);
 }
 
-void SynapseRos::actuators_callback(const actuator_msgs::msg::Actuators& msg) const
+void Rx::actuators_callback(const actuator_msgs::msg::Actuators& msg) const
 {
     synapse::msgs::Actuators syn_msg;
 
@@ -241,7 +206,7 @@ void SynapseRos::actuators_callback(const actuator_msgs::msg::Actuators& msg) co
     tf_send(SYNAPSE_ACTUATORS_TOPIC, data);
 }
 
-void SynapseRos::bezier_trajectory_callback(const synapse_msgs::msg::BezierTrajectory& msg) const
+void Rx::bezier_trajectory_callback(const synapse_msgs::msg::BezierTrajectory& msg) const
 {
     synapse::msgs::BezierTrajectory syn_msg;
 
@@ -281,7 +246,7 @@ void SynapseRos::bezier_trajectory_callback(const synapse_msgs::msg::BezierTraje
     tf_send(SYNAPSE_BEZIER_TRAJECTORY_TOPIC, data);
 }
 
-void SynapseRos::cmd_vel_callback(const geometry_msgs::msg::Twist& msg) const
+void Rx::cmd_vel_callback(const geometry_msgs::msg::Twist& msg) const
 {
     synapse::msgs::Twist syn_msg;
 
@@ -300,7 +265,7 @@ void SynapseRos::cmd_vel_callback(const geometry_msgs::msg::Twist& msg) const
     tf_send(SYNAPSE_CMD_VEL_TOPIC, data);
 }
 
-void SynapseRos::joy_callback(const sensor_msgs::msg::Joy& msg) const
+void Rx::joy_callback(const sensor_msgs::msg::Joy& msg) const
 {
     synapse::msgs::Joy syn_msg;
     for (auto i = 0u; i < msg.axes.size(); ++i) {
@@ -318,7 +283,7 @@ void SynapseRos::joy_callback(const sensor_msgs::msg::Joy& msg) const
     tf_send(SYNAPSE_JOY_TOPIC, data);
 }
 
-void SynapseRos::odometry_callback(const nav_msgs::msg::Odometry& msg) const
+void Rx::odometry_callback(const nav_msgs::msg::Odometry& msg) const
 {
     // construct empty syn_msg
     synapse::msgs::Odometry syn_msg {};
@@ -357,7 +322,7 @@ void SynapseRos::odometry_callback(const nav_msgs::msg::Odometry& msg) const
     tf_send(SYNAPSE_ODOMETRY_TOPIC, data);
 }
 
-void SynapseRos::imu_callback(const sensor_msgs::msg::Imu& msg) const
+void Rx::imu_callback(const sensor_msgs::msg::Imu& msg) const
 {
     // construct empty syn_msg
     synapse::msgs::Imu syn_msg {};
@@ -383,7 +348,7 @@ void SynapseRos::imu_callback(const sensor_msgs::msg::Imu& msg) const
     tf_send(SYNAPSE_IMU_TOPIC, data);
 }
 
-void SynapseRos::wheel_odometry_callback(const sensor_msgs::msg::JointState& msg) const
+void Rx::wheel_odometry_callback(const sensor_msgs::msg::JointState& msg) const
 {
     // construct empty syn_msg
     synapse::msgs::WheelOdometry syn_msg {};
@@ -409,7 +374,7 @@ void SynapseRos::wheel_odometry_callback(const sensor_msgs::msg::JointState& msg
     tf_send(SYNAPSE_WHEEL_ODOMETRY_TOPIC, data);
 }
 
-void SynapseRos::battery_state_callback(const sensor_msgs::msg::BatteryState& msg) const
+void Rx::battery_state_callback(const sensor_msgs::msg::BatteryState& msg) const
 {
     // construct empty syn_msg
     synapse::msgs::BatteryState syn_msg {};
@@ -429,7 +394,7 @@ void SynapseRos::battery_state_callback(const sensor_msgs::msg::BatteryState& ms
     tf_send(SYNAPSE_BATTERY_STATE_TOPIC, data);
 }
 
-void SynapseRos::magnetic_field_callback(const sensor_msgs::msg::MagneticField& msg) const
+void Rx::magnetic_field_callback(const sensor_msgs::msg::MagneticField& msg) const
 {
     // construct empty syn_msg
     synapse::msgs::MagneticField syn_msg {};
@@ -451,7 +416,7 @@ void SynapseRos::magnetic_field_callback(const sensor_msgs::msg::MagneticField& 
     tf_send(SYNAPSE_MAGNETIC_FIELD_TOPIC, data);
 }
 
-void SynapseRos::nav_sat_fix_callback(const sensor_msgs::msg::NavSatFix& msg) const
+void Rx::nav_sat_fix_callback(const sensor_msgs::msg::NavSatFix& msg) const
 {
     // construct empty syn_msg
     synapse::msgs::NavSatFix syn_msg {};
@@ -473,7 +438,7 @@ void SynapseRos::nav_sat_fix_callback(const sensor_msgs::msg::NavSatFix& msg) co
     tf_send(SYNAPSE_NAV_SAT_FIX_TOPIC, data);
 }
 
-void SynapseRos::tf_send(int topic, const std::string& data) const
+void Rx::tf_send(int topic, const std::string& data) const
 {
     TF_Msg frame;
     frame.type = topic;
@@ -485,7 +450,7 @@ void SynapseRos::tf_send(int topic, const std::string& data) const
 int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<SynapseRos>());
+    rclcpp::spin(std::make_shared<Rx>());
     rclcpp::shutdown();
     return 0;
 }
