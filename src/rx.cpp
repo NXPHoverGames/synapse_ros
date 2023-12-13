@@ -23,11 +23,13 @@ SynapseRos::SynapseRos()
     : Node("synapse_ros")
 {
     this->declare_parameter("host", "192.0.2.1");
-    this->declare_parameter("port", 4242);
+    this->declare_parameter("tx_port", 4242);
+    this->declare_parameter("rx_port", 4243);
     this->declare_parameter("hil_mode", false);
 
     std::string host = this->get_parameter("host").as_string();
-    int port = this->get_parameter("port").as_int();
+    int tx_port = this->get_parameter("tx_port").as_int();
+    int rx_port = this->get_parameter("rx_port").as_int();
     bool hil_mode = this->get_parameter("hil_mode").as_bool();
 
     // subscriptions ros -> cerebri
@@ -187,6 +189,8 @@ void SynapseRos::publish_status(const synapse::msgs::Status& msg)
     ros_msg.fuel_percentage = msg.fuel_percentage();
     ros_msg.power = msg.power();
     ros_msg.status_message = msg.status_message();
+    ros_msg.request_seq = msg.request_seq();
+    ros_msg.request_rejected = msg.request_rejected();
 
     pub_status_->publish(ros_msg);
 }
