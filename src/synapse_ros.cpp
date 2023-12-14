@@ -187,6 +187,8 @@ void SynapseRos::publish_status(const synapse::msgs::Status& msg)
     ros_msg.fuel_percentage = msg.fuel_percentage();
     ros_msg.power = msg.power();
     ros_msg.status_message = msg.status_message();
+    ros_msg.request_rejected = msg.request_rejected();
+    ros_msg.request_seq = msg.request_seq();
 
     pub_status_->publish(ros_msg);
 }
