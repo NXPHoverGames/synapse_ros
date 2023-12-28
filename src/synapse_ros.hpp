@@ -10,6 +10,7 @@
 #include <rclcpp/subscription_options.hpp>
 
 #include <sensor_msgs/msg/battery_state.hpp>
+#include <sensor_msgs/msg/detail/nav_sat_fix__struct.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <sensor_msgs/msg/joy.hpp>
@@ -48,6 +49,7 @@ public:
     void publish_actuators(const synapse::msgs::Actuators& msg);
     void publish_odometry(const synapse::msgs::Odometry& msg);
     void publish_battery_state(const synapse::msgs::BatteryState& msg);
+    void publish_nav_sat_fix(const synapse::msgs::NavSatFix& msg);
     void publish_status(const synapse::msgs::Status& msg);
     void publish_uptime(const synapse::msgs::Time& msg);
 
@@ -85,6 +87,7 @@ private:
     rclcpp::Publisher<actuator_msgs::msg::Actuators>::SharedPtr pub_actuators_;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odometry_;
     rclcpp::Publisher<sensor_msgs::msg::BatteryState>::SharedPtr pub_battery_state_;
+    rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr pub_nav_sat_fix_;
     rclcpp::Publisher<synapse_msgs::msg::Status>::SharedPtr pub_status_;
     rclcpp::Publisher<builtin_interfaces::msg::Time>::SharedPtr pub_uptime_;
     rclcpp::Publisher<builtin_interfaces::msg::Time>::SharedPtr pub_clock_offset_;

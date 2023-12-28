@@ -67,6 +67,8 @@ SynapseRos::SynapseRos()
     pub_actuators_ = this->create_publisher<actuator_msgs::msg::Actuators>("out/actuators", 10);
     pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("out/odometry", 10);
     pub_battery_state_ = this->create_publisher<sensor_msgs::msg::BatteryState>("out/battery_state", 10);
+    pub_nav_sat_fix_ = this->create_publisher<sensor_msgs::msg::NavSatFix>("out/nav_sat_fix", 10);
+
     pub_status_ = this->create_publisher<synapse_msgs::msg::Status>("out/status", 10);
     pub_uptime_ = this->create_publisher<builtin_interfaces::msg::Time>("out/uptime", 10);
     pub_clock_offset_ = this->create_publisher<builtin_interfaces::msg::Time>("out/clock_offset", 10);
@@ -191,6 +193,22 @@ void SynapseRos::publish_status(const synapse::msgs::Status& msg)
     ros_msg.request_seq = msg.request_seq();
 
     pub_status_->publish(ros_msg);
+}
+
+void SynapseRos::publish_nav_sat_fix(const synapse::msgs::NavSatFix& msg)
+{
+    sensor_msgs::msg::NavSatFix ros_msg;
+
+    // header
+    if (msg.has_header()) {
+        ros_msg.header = compute_header(msg.header());
+    }
+
+    ros_msg.latitude = msg.latitude();
+    ros_msg.longitude = msg.longitude();
+    ros_msg.altitude = msg.altitude();
+
+    pub_nav_sat_fix_->publish(ros_msg);
 }
 
 void SynapseRos::publish_uptime(const synapse::msgs::Time& msg)

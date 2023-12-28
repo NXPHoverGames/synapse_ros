@@ -41,6 +41,7 @@ private:
     static TF_Result actuators_listener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result out_cmd_vel_listener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result battery_state_listener(TinyFrame* tf, TF_Msg* frame);
+    static TF_Result nav_sat_fix_listener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result status_listener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result uptime_listener(TinyFrame* tf, TF_Msg* frame);
     static TF_Result generic_listener(TinyFrame* tf, TF_Msg* msg);

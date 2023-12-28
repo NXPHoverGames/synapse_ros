@@ -1,3 +1,4 @@
+#include <synapse_protobuf/nav_sat_fix.pb.h>
 #include <synapse_tinyframe/SynapseTopics.h>
 #include <synapse_tinyframe/utils.h>
 
@@ -81,6 +82,7 @@ TcpClient::TcpClient(std::string host, int port)
     TF_AddTypeListener(tf_.get(), SYNAPSE_ACTUATORS_TOPIC, TcpClient::actuators_listener);
     TF_AddTypeListener(tf_.get(), SYNAPSE_ODOMETRY_TOPIC, TcpClient::odometry_listener);
     TF_AddTypeListener(tf_.get(), SYNAPSE_BATTERY_STATE_TOPIC, TcpClient::battery_state_listener);
+    TF_AddTypeListener(tf_.get(), SYNAPSE_NAV_SAT_FIX_TOPIC, TcpClient::nav_sat_fix_listener);
     TF_AddTypeListener(tf_.get(), SYNAPSE_STATUS_TOPIC, TcpClient::status_listener);
     TF_AddTypeListener(tf_.get(), SYNAPSE_UPTIME_TOPIC, TcpClient::uptime_listener);
     timer_.async_wait(std::bind(&TcpClient::tick, this, _1));
@@ -198,6 +200,23 @@ TF_Result TcpClient::battery_state_listener(TinyFrame* tf, TF_Msg* frame)
     TcpClient* tcp_client = (TcpClient*)tf->userdata;
     if (tcp_client->ros_ != NULL) {
         tcp_client->ros_->publish_battery_state(syn_msg);
+    }
+    return TF_STAY;
+}
+
+TF_Result TcpClient::nav_sat_fix_listener(TinyFrame* tf, TF_Msg* frame)
+{
+    // parse protobuf message
+    synapse::msgs::NavSatFix syn_msg;
+    if (!syn_msg.ParseFromArray(frame->data, frame->len)) {
+        std::cerr << "Failed to parse battery state" << std::endl;
+        return TF_STAY;
+    }
+
+    // send to ros
+    TcpClient* tcp_client = (TcpClient*)tf->userdata;
+    if (tcp_client->ros_ != NULL) {
+        tcp_client->ros_->publish_nav_sat_fix(syn_msg);
     }
     return TF_STAY;
 }
