@@ -37,9 +37,9 @@
 #include <synapse_tinyframe/SynapseTopics.h>
 #include <synapse_tinyframe/TinyFrame.h>
 
-class TcpClient;
+class UdpClient;
 
-void tcp_entry_point();
+void udp_entry_point();
 
 class SynapseRos : public rclcpp::Node {
 public:
@@ -93,7 +93,7 @@ private:
     rclcpp::Publisher<builtin_interfaces::msg::Time>::SharedPtr pub_clock_offset_;
 
     // callbacks
-    std::shared_ptr<std::thread> tcp_thread_;
+    std::shared_ptr<std::thread> udp_thread_;
 };
 
 // vi: ts=4 sw=4 et
