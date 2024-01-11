@@ -18,8 +18,8 @@ find_package(synapse_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
 add_executable(${PROJECT_NAME}
-  src/${PROJECT_NAME}.cpp
-  src/clients/tcp_client.cpp
+  src/synapse_ros.cpp
+  src/proto/udp_link.cpp
   )
 
 ament_target_dependencies(${PROJECT_NAME}

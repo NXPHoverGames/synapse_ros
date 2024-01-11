@@ -1,5 +1,6 @@
 #include "synapse_ros.hpp"
-#include "clients/tcp_client.hpp"
+#include "proto/udp_link.hpp"
+#include <rclcpp/logger.hpp>
 #include <sensor_msgs/msg/detail/battery_state__struct.hpp>
 #include <sensor_msgs/msg/detail/joint_state__struct.hpp>
 #include <sensor_msgs/msg/detail/magnetic_field__struct.hpp>
@@ -10,12 +11,12 @@
 #include <synapse_protobuf/wheel_odometry.pb.h>
 
 using std::placeholders::_1;
-std::shared_ptr<TcpClient> g_tcp_client { NULL };
+std::shared_ptr<UDPLink> g_udp_link { NULL };
 
-void tcp_entry_point()
+void udp_entry_point()
 {
     while (rclcpp::ok()) {
-        g_tcp_client->run_for(std::chrono::seconds(1));
+        g_udp_link->run_for(std::chrono::seconds(1));
     }
 }
 
@@ -73,17 +74,17 @@ SynapseRos::SynapseRos()
     pub_uptime_ = this->create_publisher<builtin_interfaces::msg::Time>("out/uptime", 10);
     pub_clock_offset_ = this->create_publisher<builtin_interfaces::msg::Time>("out/clock_offset", 10);
 
-    // create tcp client
-    g_tcp_client = std::make_shared<TcpClient>(host, port);
-    g_tcp_client.get()->ros_ = this;
-    tf_ = g_tcp_client.get()->tf_;
-    tcp_thread_ = std::make_shared<std::thread>(tcp_entry_point);
+    // create udp link
+    g_udp_link = std::make_shared<UDPLink>(host, port);
+    g_udp_link.get()->ros_ = this;
+    tf_ = g_udp_link.get()->tf_;
+    udp_thread_ = std::make_shared<std::thread>(udp_entry_point);
 }
 
 SynapseRos::~SynapseRos()
 {
     // join threads
-    tcp_thread_->join();
+    udp_thread_->join();
 }
 
 std_msgs::msg::Header SynapseRos::compute_header(const synapse::msgs::Header& msg)

@@ -1,39 +1,37 @@
-#ifndef SYNAPSE_ROS_TCP_CLIENT_HPP__
-#define SYNAPSE_ROS_TCP_CLIENT_HPP__
+#ifndef SYNAPSE_ROS_PROTO_UDP_LINK_HPP__
+#define SYNAPSE_ROS_PROTO_UDP_LINK_HPP__
 
 #include <boost/asio.hpp>
-#include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/date_time/posix_time/posix_time_config.hpp>
 
 #include "synapse_tinyframe/TinyFrame.h"
 
 class SynapseRos;
 
-class TcpClient {
+class UDPLink {
 private:
     static const uint32_t rx_buf_length_ = 1024;
     std::mutex guard_rx_buf_;
     uint8_t rx_buf_[rx_buf_length_];
     boost::asio::io_context io_context_ {};
-    boost::asio::deadline_timer timer_ { io_context_, boost::posix_time::seconds(0) };
-    boost::asio::ip::tcp::socket sockfd_ { boost::asio::ip::tcp::socket(io_context_) };
-    boost::asio::ip::tcp::resolver resolver_ { io_context_ };
-    std::string host_;
-    int port_;
-    bool connected_ { false };
+    boost::asio::ip::udp::socket sock_ {
+        boost::asio::ip::udp::socket(io_context_,
+            boost::asio::ip::udp::endpoint(
+                boost::asio::ip::udp::v4(), 4242))
+    };
+    boost::asio::ip::udp::endpoint remote_endpoint_;
+    boost::asio::ip::udp::endpoint my_endpoint_;
 
 public:
     std::shared_ptr<TinyFrame> tf_ {};
     SynapseRos* ros_ { NULL };
-    TcpClient(std::string host, int port);
+    UDPLink(std::string host, int port);
     void run_for(std::chrono::seconds sec);
     void write(const uint8_t* buf, uint32_t len);
 
 private:
-    void handle_connect(
-        const boost::system::error_code& ec,
-        const boost::asio::ip::tcp::endpoint& endpoint);
-    void tick(const boost::system::error_code& /*e*/);
+    void timeout_handler();
     void tx_handler(const boost::system::error_code& error, std::size_t bytes_transferred);
     void rx_handler(const boost::system::error_code& error, std::size_t bytes_transferred);
     void send_frame(TF_Msg* msg);
@@ -49,4 +47,4 @@ private:
 
 // vi: ts=4 sw=4 et
 
-#endif // SYNAPSE_ROS_TCP_CLIENT_HPP__
+#endif // SYNAPSE_ROS_PROTO_UDP_LINK_HPP__
