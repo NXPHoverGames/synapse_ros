@@ -37,6 +37,9 @@ SynapseRos::SynapseRos()
 
     sub_bezier_trajectory_ = this->create_subscription<synapse_msgs::msg::BezierTrajectory>(
         "in/bezier_trajectory", 10, std::bind(&SynapseRos::bezier_trajectory_callback, this, _1));
+    
+    sub_pixy_vector_ = this->create_subscription<synapse_msgs::msg::PixyVector>(
+        "in/pixy_vector", 10, std::bind(&SynapseRos::pixy_vector_callback, this, _1));
 
     sub_cmd_vel_ = this->create_subscription<geometry_msgs::msg::Twist>(
         "in/cmd_vel", 10, std::bind(&SynapseRos::cmd_vel_callback, this, _1));
@@ -296,6 +299,32 @@ void SynapseRos::bezier_trajectory_callback(const synapse_msgs::msg::BezierTraje
         std::cerr << "Failed to serialize BezierTrajectory" << std::endl;
     }
     tf_send(SYNAPSE_BEZIER_TRAJECTORY_TOPIC, data);
+}
+void SynapseRos::pixy_vector_callback(const synapse_msgs::msg::PixyVector& msg) const
+{
+    synapse::msgs::PixyVector syn_msg;
+
+    // header
+    syn_msg.mutable_header()->set_frame_id(msg.header.frame_id);
+    syn_msg.mutable_header()->mutable_stamp()->set_sec(msg.header.stamp.sec);
+    syn_msg.mutable_header()->mutable_stamp()->set_nanosec(msg.header.stamp.nanosec);
+    
+    // vector
+    syn_msg.set_m0_x0(msg.m0_x0);
+    syn_msg.set_m0_y0(msg.m0_y0);
+    syn_msg.set_m0_x1(msg.m0_x1);
+    syn_msg.set_m0_y1(msg.m0_y1);
+    syn_msg.set_m1_x0(msg.m1_x0);
+    syn_msg.set_m1_y0(msg.m1_y0);
+    syn_msg.set_m1_x1(msg.m1_x1);
+    syn_msg.set_m1_y1(msg.m1_y1);
+    
+
+    std::string data;
+    if (!syn_msg.SerializeToString(&data)) {
+        std::cerr << "Failed to serialize PixyVector" << std::endl;
+    }
+    tf_send(SYNAPSE_PIXY_VECTOR_TOPIC, data);
 }
 
 void SynapseRos::cmd_vel_callback(const geometry_msgs::msg::Twist& msg) const

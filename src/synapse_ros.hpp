@@ -19,6 +19,8 @@
 
 #include <synapse_msgs/msg/bezier_trajectory.hpp>
 #include <synapse_msgs/msg/status.hpp>
+#include <synapse_msgs/msg/status.hpp>
+#include <synapse_msgs/msg/pixy_vector.hpp>
 
 #include <synapse_protobuf/actuators.pb.h>
 #include <synapse_protobuf/battery_state.pb.h>
@@ -33,6 +35,7 @@
 #include <synapse_protobuf/time.pb.h>
 #include <synapse_protobuf/twist.pb.h>
 #include <synapse_protobuf/wheel_odometry.pb.h>
+#include <synapse_protobuf/pixy_vector.pb.h>
 
 #include <synapse_tinyframe/SynapseTopics.h>
 #include <synapse_tinyframe/TinyFrame.h>
@@ -70,6 +73,7 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::MagneticField>::SharedPtr sub_magnetic_field_;
     rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr sub_nav_sat_fix_;
     rclcpp::Subscription<synapse_msgs::msg::BezierTrajectory>::SharedPtr sub_bezier_trajectory_;
+    rclcpp::Subscription<synapse_msgs::msg::PixyVector>::SharedPtr sub_pixy_vector_;
 
     // subscription callbacks
     void actuators_callback(const actuator_msgs::msg::Actuators& msg) const;
@@ -82,6 +86,7 @@ private:
     void nav_sat_fix_callback(const sensor_msgs::msg::NavSatFix& msg) const;
     void odometry_callback(const nav_msgs::msg::Odometry& msg) const;
     void wheel_odometry_callback(const sensor_msgs::msg::JointState& msg) const;
+    void pixy_vector_callback(const synapse_msgs::msg::PixyVector& msg) const;
 
     // publications cerebri -> ros
     rclcpp::Publisher<actuator_msgs::msg::Actuators>::SharedPtr pub_actuators_;
